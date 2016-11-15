@@ -126,7 +126,7 @@ func PubFromSlice(b []byte) (*Pub, error) {
 	}
 	pub := &Pub{}
 	copy(pub[:], b)
-	return pub, IncorrectPubKeySize
+	return pub, nil
 }
 
 func (pub *Pub) Precompute(priv *Priv) *Shared {
@@ -219,4 +219,10 @@ func RandInt(max int) int {
 	b := make([]byte, 4)
 	rand.Read(b)
 	return (int(b[0]) + int(b[1])<<8 + int(b[2])<<16 + int(b[3])<<24) % max
+}
+
+func RandUint32() uint32 {
+	b := make([]byte, 4)
+	rand.Read(b)
+	return (uint32(b[0]) + uint32(b[1])<<8 + uint32(b[2])<<16 + uint32(b[3])<<24)
 }
