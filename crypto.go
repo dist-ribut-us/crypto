@@ -86,16 +86,16 @@ func keyFromArr(k *[KeyLength]byte) *key { return (*key)(k) }
 func (pub *Pub) Slice() []byte { return pub[:] }
 
 // String returns the base64 encoding of the public key
-func (p *Pub) String() string { return base64.StdEncoding.EncodeToString(p[:]) }
+func (pub *Pub) String() string { return base64.StdEncoding.EncodeToString(pub[:]) }
 
 // String returns the base64 encoding of the private key
-func (p *Priv) String() string { return base64.StdEncoding.EncodeToString(p[:]) }
+func (priv *Priv) String() string { return base64.StdEncoding.EncodeToString(priv[:]) }
 
 // String returns the base64 encoding of the shared key
-func (s *Shared) String() string { return base64.StdEncoding.EncodeToString(s[:]) }
+func (shared *Shared) String() string { return base64.StdEncoding.EncodeToString(shared[:]) }
 
 // String returns the base64 encoding of the ID
-func (i *ID) String() string { return base64.StdEncoding.EncodeToString(i[:]) }
+func (id *ID) String() string { return base64.StdEncoding.EncodeToString(id[:]) }
 
 // GenerateKey returns a public and private key.
 func GenerateKey() (*Pub, *Priv, error) {
@@ -140,7 +140,7 @@ func PubFromString(pubStr string) (*Pub, error) {
 }
 
 // GetID returns the ID for a public key.
-func (pub Pub) GetID() *ID {
+func (pub *Pub) GetID() *ID {
 	h := sha256.New()
 	h.Write(pub[:])
 	id := &ID{}
@@ -163,7 +163,7 @@ func IDFromSlice(b []byte) (*ID, error) {
 }
 
 // GetKeyRef returns the KeyRef for a private key
-func (priv Priv) GetKeyRef() *KeyRef {
+func (priv *Priv) GetKeyRef() *KeyRef {
 	h := sha256.New()
 	h.Write(priv[:])
 	keyRef := &KeyRef{}
@@ -178,7 +178,7 @@ var ErrIncorrectPubKeySize = errors.New("Incorrect Public key size")
 // the slice can be modified after.
 func PubFromSlice(b []byte) (*Pub, error) {
 	if len(b) != KeyLength {
-		return nil, IncorrectPubKeySize
+		return nil, ErrIncorrectPubKeySize
 	}
 	pub := &Pub{}
 	copy(pub[:], b)
