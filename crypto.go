@@ -8,10 +8,14 @@ import (
 	"golang.org/x/crypto/nacl/box"
 )
 
+// KeyLength of array applies to Public, Private and Shared keys.
 const KeyLength = 32
+
+// NonceLegnth of array
 const NonceLength = 24
+
+// IDLength of array
 const IDLength = 10
-const TagLength = 16
 
 // ID is a shorthand used to make referencing public keys easier. An ID is the
 // first 10 bytes of the sha256 of a public key. While the chances of accidental
@@ -19,28 +23,64 @@ const TagLength = 16
 // can be used as to make hash tables more efficient, but should not be
 // substituded for a full key check.
 type ID [IDLength]byte
+
+// KeyRef is similar to ID for private keys. It can be useful for managing
+// private keys.
 type KeyRef [IDLength]byte
+
+// Nonce array
 type Nonce [NonceLength]byte
+
 type key [KeyLength]byte
+
+// Pub Key
 type Pub key
+
+// Priv key
 type Priv key
+
+// Shared key
 type Shared key
 
-func (pub *Pub) Arr() *[KeyLength]byte       { return (*[KeyLength]byte)(pub) }
-func (priv *Priv) Arr() *[KeyLength]byte     { return (*[KeyLength]byte)(priv) }
-func (shared *Shared) Arr() *[KeyLength]byte { return (*[KeyLength]byte)(shared) }
-func (id *ID) Arr() *[IDLength]byte          { return (*[IDLength]byte)(id) }
-func (keyref *KeyRef) Arr() *[IDLength]byte  { return (*[IDLength]byte)(keyref) }
-func (noncd *Nonce) Arr() *[NonceLength]byte { return (*[NonceLength]byte)(noncd) }
-func (key *key) Arr() *[KeyLength]byte       { return (*[KeyLength]byte)(key) }
+// Arr returns a reference to the array underlying the public key
+func (pub *Pub) Arr() *[KeyLength]byte { return (*[KeyLength]byte)(pub) }
 
-func PubFromArr(pub *[KeyLength]byte) *Pub          { return (*Pub)(pub) }
-func PrivFromArr(priv *[KeyLength]byte) *Priv       { return (*Priv)(priv) }
+// Arr returns a reference to the array underlying the private key
+func (priv *Priv) Arr() *[KeyLength]byte { return (*[KeyLength]byte)(priv) }
+
+// Arr returns a reference to the array underlying the shared key
+func (shared *Shared) Arr() *[KeyLength]byte { return (*[KeyLength]byte)(shared) }
+
+// Arr returns a reference to the array underlying the ID
+func (id *ID) Arr() *[IDLength]byte { return (*[IDLength]byte)(id) }
+
+// Arr returns a reference to the array underlying the KeyRef
+func (keyref *KeyRef) Arr() *[IDLength]byte { return (*[IDLength]byte)(keyref) }
+
+// Arr returns a reference to the array underlying the Nonce
+func (noncd *Nonce) Arr() *[NonceLength]byte { return (*[NonceLength]byte)(noncd) }
+
+func (key *key) arr() *[KeyLength]byte { return (*[KeyLength]byte)(key) }
+
+// PubFromArr casts an array to a public key
+func PubFromArr(pub *[KeyLength]byte) *Pub { return (*Pub)(pub) }
+
+// PrivFromArr casts an array to a private key
+func PrivFromArr(priv *[KeyLength]byte) *Priv { return (*Priv)(priv) }
+
+// SharedFromArr casts an array to a shared key
 func SharedFromArr(shared *[KeyLength]byte) *Shared { return (*Shared)(shared) }
-func IDFromArr(id *[IDLength]byte) *ID              { return (*ID)(id) }
-func KeyRefFromArr(keyref *[IDLength]byte) *KeyRef  { return (*KeyRef)(keyref) }
-func NonceFromArr(noncd *[NonceLength]byte) *Nonce  { return (*Nonce)(noncd) }
-func keyFromArr(k *[KeyLength]byte) *key            { return (*key)(k) }
+
+// IDFromArr casts an array to an ID
+func IDFromArr(id *[IDLength]byte) *ID { return (*ID)(id) }
+
+// KeyRefFromArr casts an array to a KeyRef
+func KeyRefFromArr(keyref *[IDLength]byte) *KeyRef { return (*KeyRef)(keyref) }
+
+// NonceFromArr casts an array to a Nonce
+func NonceFromArr(noncd *[NonceLength]byte) *Nonce { return (*Nonce)(noncd) }
+
+func keyFromArr(k *[KeyLength]byte) *key { return (*key)(k) }
 
 func (pub *Pub) Slice() []byte { return pub[:] }
 
@@ -136,7 +176,7 @@ func (pub *Pub) Precompute(priv *Priv) *Shared {
 }
 
 func (shared *Shared) Seal(msg []byte) []byte {
-	out := make([]byte, NonceLength, len(msg)+TagLength+NonceLength)
+	out := make([]byte, NonceLength, len(msg)+box.Overhead+NonceLength)
 	nonce := &Nonce{}
 	rand.Read(nonce[:])
 	copy(out, nonce[:])

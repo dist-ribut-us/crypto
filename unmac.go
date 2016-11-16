@@ -22,7 +22,7 @@ func (shared *Shared) UnmacdSeal(message []byte, nonce *Nonce) []byte {
 	setup(subKey, &counter, nonce, shared)
 
 	var firstBlock [64]byte
-	salsa.XORKeyStream(firstBlock[:], firstBlock[:], &counter, subKey.Arr())
+	salsa.XORKeyStream(firstBlock[:], firstBlock[:], &counter, subKey.arr())
 
 	// We XOR up to 32 bytes of message with the keystream generated from
 	// the first block.
@@ -38,7 +38,7 @@ func (shared *Shared) UnmacdSeal(message []byte, nonce *Nonce) []byte {
 
 	// Now encrypt the rest.
 	counter[8] = 1
-	salsa.XORKeyStream(out, message, &counter, subKey.Arr())
+	salsa.XORKeyStream(out, message, &counter, subKey.arr())
 
 	return ret
 }
@@ -48,7 +48,7 @@ func setup(subKey *key, counter *[16]byte, nonce *Nonce, shared *Shared) {
 	// key and nonce with HSalsa20.
 	var hNonce [16]byte
 	copy(hNonce[:], nonce[:])
-	salsa.HSalsa20(subKey.Arr(), &hNonce, shared.Arr(), &salsa.Sigma)
+	salsa.HSalsa20(subKey.arr(), &hNonce, shared.Arr(), &salsa.Sigma)
 
 	// The final 8 bytes of the original nonce form the new nonce.
 	copy(counter[:], nonce[16:])
@@ -67,7 +67,7 @@ func (shared *Shared) UnmacdOpen(cipher []byte, nonce *Nonce) []byte {
 	// Salsa20 works with 64-byte blocks, we also generate 32 bytes of
 	// keystream as a side effect.
 	var firstBlock [64]byte
-	salsa.XORKeyStream(firstBlock[:], firstBlock[:], &counter, subKey.Arr())
+	salsa.XORKeyStream(firstBlock[:], firstBlock[:], &counter, subKey.arr())
 
 	//ret, out := sliceForAppend(out, len(cipher)-Overhead)
 	ret := make([]byte, len(cipher))
@@ -88,7 +88,7 @@ func (shared *Shared) UnmacdOpen(cipher []byte, nonce *Nonce) []byte {
 
 	// Now decrypt the rest.
 	counter[8] = 1
-	salsa.XORKeyStream(out, cipher, &counter, subKey.Arr())
+	salsa.XORKeyStream(out, cipher, &counter, subKey.arr())
 
 	return ret
 }
