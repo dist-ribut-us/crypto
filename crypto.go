@@ -275,14 +275,14 @@ func (priv *Priv) AnonOpenShared(cipher []byte) ([]byte, *Shared, error) {
 }
 
 // Inc increments the Nonce
-func (n *Nonce) Inc() *Nonce {
-	for i, v := range n {
-		n[i]++
+func (nonce *Nonce) Inc() *Nonce {
+	for i, v := range nonce {
+		nonce[i]++
 		if v != 255 {
 			break
 		}
 	}
-	return n
+	return nonce
 }
 
 // RandInt returns a random int generated using crypto/rand

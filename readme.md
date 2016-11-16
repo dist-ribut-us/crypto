@@ -1,4 +1,4 @@
 ## Dist-ribut-us Crypto
 Wrapper around crypto functions.
 
-See [documentation](https://godoc.org/github.com/dist-ribut-us/crypto).
+[![GoDoc](https://godoc.org/github.com/dist-ribut-us/crypto?status.svg)](https://godoc.org/github.com/dist-ribut-us/crypto)
