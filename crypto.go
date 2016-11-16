@@ -58,7 +58,7 @@ func (id *ID) Arr() *[IDLength]byte { return (*[IDLength]byte)(id) }
 func (keyref *KeyRef) Arr() *[IDLength]byte { return (*[IDLength]byte)(keyref) }
 
 // Arr returns a reference to the array underlying the Nonce
-func (noncd *Nonce) Arr() *[NonceLength]byte { return (*[NonceLength]byte)(noncd) }
+func (nonce *Nonce) Arr() *[NonceLength]byte { return (*[NonceLength]byte)(nonce) }
 
 func (key *key) arr() *[KeyLength]byte { return (*[KeyLength]byte)(key) }
 
