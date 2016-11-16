@@ -82,13 +82,22 @@ func NonceFromArr(noncd *[NonceLength]byte) *Nonce { return (*Nonce)(noncd) }
 
 func keyFromArr(k *[KeyLength]byte) *key { return (*key)(k) }
 
+// Slice casts the public key to a byte slice
 func (pub *Pub) Slice() []byte { return pub[:] }
 
-func (p *Pub) String() string    { return base64.StdEncoding.EncodeToString(p[:]) }
-func (p *Priv) String() string   { return base64.StdEncoding.EncodeToString(p[:]) }
-func (s *Shared) String() string { return base64.StdEncoding.EncodeToString(s[:]) }
-func (i *ID) String() string     { return base64.StdEncoding.EncodeToString(i[:]) }
+// String returns the base64 encoding of the public key
+func (p *Pub) String() string { return base64.StdEncoding.EncodeToString(p[:]) }
 
+// String returns the base64 encoding of the private key
+func (p *Priv) String() string { return base64.StdEncoding.EncodeToString(p[:]) }
+
+// String returns the base64 encoding of the shared key
+func (s *Shared) String() string { return base64.StdEncoding.EncodeToString(s[:]) }
+
+// String returns the base64 encoding of the ID
+func (i *ID) String() string { return base64.StdEncoding.EncodeToString(i[:]) }
+
+// GenerateKey returns a public and private key.
 func GenerateKey() (*Pub, *Priv, error) {
 	pub, priv, err := box.GenerateKey(rand.Reader)
 	if err != nil {
@@ -139,17 +148,21 @@ func (pub Pub) GetID() *ID {
 	return id
 }
 
-var IncorrectIDSize = errors.New("Incorrect ID size")
+// ErrIncorrectIDSize when a byte slice length does not equal IDLength
+var ErrIncorrectIDSize = errors.New("Incorrect ID size")
 
+// IDFromSlice returns an ID from a byte slice. The values are copied, so the
+// slice can be modified after
 func IDFromSlice(b []byte) (*ID, error) {
 	if len(b) != IDLength {
-		return nil, IncorrectIDSize
+		return nil, ErrIncorrectIDSize
 	}
 	id := &ID{}
 	copy(id[:], b)
 	return id, nil
 }
 
+// GetKeyRef returns the KeyRef for a private key
 func (priv Priv) GetKeyRef() *KeyRef {
 	h := sha256.New()
 	h.Write(priv[:])
@@ -158,8 +171,11 @@ func (priv Priv) GetKeyRef() *KeyRef {
 	return keyRef
 }
 
-var IncorrectPubKeySize = errors.New("Incorrect Public key size")
+// ErrIncorrectPubKeySize when a byte slice length does not equal KeyLength
+var ErrIncorrectPubKeySize = errors.New("Incorrect Public key size")
 
+// PubFromSlice converts a byte slice to a public key. The values are copied, so
+// the slice can be modified after.
 func PubFromSlice(b []byte) (*Pub, error) {
 	if len(b) != KeyLength {
 		return nil, IncorrectPubKeySize
@@ -169,12 +185,15 @@ func PubFromSlice(b []byte) (*Pub, error) {
 	return pub, nil
 }
 
+// Precompute returns a Shared key from a public and private key
 func (pub *Pub) Precompute(priv *Priv) *Shared {
 	shared := &Shared{}
 	box.Precompute(shared.Arr(), pub.Arr(), priv.Arr())
 	return shared
 }
 
+// Seal uses a random Nonce to seal a message using a shared key. Decyrpted
+// with Open
 func (shared *Shared) Seal(msg []byte) []byte {
 	out := make([]byte, NonceLength, len(msg)+box.Overhead+NonceLength)
 	nonce := &Nonce{}
@@ -184,6 +203,7 @@ func (shared *Shared) Seal(msg []byte) []byte {
 	return box.SealAfterPrecomputation(out, msg, nonce.Arr(), shared.Arr())
 }
 
+// SealAll seals many messages with the same shared key
 func (shared *Shared) SealAll(msgs [][]byte) [][]byte {
 	ciphers := make([][]byte, len(msgs))
 	for i, msg := range msgs {
@@ -192,15 +212,17 @@ func (shared *Shared) SealAll(msgs [][]byte) [][]byte {
 	return ciphers
 }
 
-var DecryptionFailed = errors.New("Decryption Failed")
+// ErrDecryptionFailed when no other information is available
+var ErrDecryptionFailed = errors.New("Decryption Failed")
 
+// Open will decipher a message ciphered with Seal.
 func (shared *Shared) Open(cipher []byte) ([]byte, error) {
 	nonce := &Nonce{}
 	copy(nonce[:], cipher[:NonceLength])
 
 	data, ok := box.OpenAfterPrecomputation(nil, cipher[NonceLength:], nonce.Arr(), shared.Arr())
 	if !ok {
-		return nil, DecryptionFailed
+		return nil, ErrDecryptionFailed
 	}
 
 	return data, nil
@@ -208,16 +230,24 @@ func (shared *Shared) Open(cipher []byte) ([]byte, error) {
 
 var zeroNonce = &Nonce{}
 
+// AnonSeal encrypts a message with a random key pair. The Nonce is always 0 and
+// the public key is prepended to the cipher. The recipient can open the message
+// but the sender remains anonymous.
 func (pub *Pub) AnonSeal(msg []byte) ([]byte, error) {
 	cipher, _, err := pub.AnonSealShared(msg)
 	return cipher, err
 }
 
+// AnonOpen decrypts a cipher from AnonSeal or AnonSealShared.
 func (priv *Priv) AnonOpen(cipher []byte) ([]byte, error) {
 	msg, _, err := priv.AnonOpenShared(cipher)
 	return msg, err
 }
 
+// AnonSealShared encrypts a message with a random key pair. The Nonce is always
+// 0 and the public key is prepended to the cipher. The recipient can open the
+// message but the sender remains anonymous. This method also returns the shared
+// key for the message.
 func (pub *Pub) AnonSealShared(msg []byte) ([]byte, *Shared, error) {
 	otkPub, otkPriv, err := GenerateKey()
 	if err != nil {
@@ -227,9 +257,11 @@ func (pub *Pub) AnonSealShared(msg []byte) ([]byte, *Shared, error) {
 	return box.SealAfterPrecomputation(otkPub[:], msg, zeroNonce.Arr(), shared.Arr()), shared, nil
 }
 
+// AnonOpenShared decrypts a cipher from AnonSeal or AnonSealShared and returns
+// the shared key.
 func (priv *Priv) AnonOpenShared(cipher []byte) ([]byte, *Shared, error) {
 	if len(cipher) <= KeyLength {
-		return nil, nil, DecryptionFailed
+		return nil, nil, ErrDecryptionFailed
 	}
 	otkPub := &Pub{}
 	copy(otkPub[:], cipher[:KeyLength])
@@ -237,11 +269,12 @@ func (priv *Priv) AnonOpenShared(cipher []byte) ([]byte, *Shared, error) {
 
 	msg, ok := box.OpenAfterPrecomputation(nil, cipher[KeyLength:], zeroNonce.Arr(), shared.Arr())
 	if !ok {
-		return nil, nil, DecryptionFailed
+		return nil, nil, ErrDecryptionFailed
 	}
 	return msg, shared, nil
 }
 
+// Inc increments the Nonce
 func (n *Nonce) Inc() *Nonce {
 	for i, v := range n {
 		n[i]++
@@ -252,15 +285,15 @@ func (n *Nonce) Inc() *Nonce {
 	return n
 }
 
-/*
-This is no good, because of the way it will wrap, some numbers will have twice the chance
-*/
+// RandInt returns a random int generated using crypto/rand
 func RandInt(max int) int {
+	//This is no good, because of the way it will wrap, some numbers will have twice the chance
 	b := make([]byte, 4)
 	rand.Read(b)
 	return (int(b[0]) + int(b[1])<<8 + int(b[2])<<16 + int(b[3])<<24) % max
 }
 
+// RandUint32 returns a random int generated using crypto/rand
 func RandUint32() uint32 {
 	b := make([]byte, 4)
 	rand.Read(b)

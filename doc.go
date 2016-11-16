@@ -1,4 +1,4 @@
-// Crypto wraps many of the standard Go crypto tools. The most significant
+// Package crypto wraps many of the standard Go crypto tools. The most significant
 // feature is providing types that distinguish Public and Private keys, rather
 // than using slices or arrays of bytes directly.
 //
