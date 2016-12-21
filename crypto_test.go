@@ -92,3 +92,16 @@ func TestNonceInc(t *testing.T) {
 	expected[2] = 6
 	assert.Equal(t, expected, n)
 }
+
+func TestRandomShared(t *testing.T) {
+	msg := []byte("This is a test")
+	s, err := RandomShared()
+	assert.NoError(t, err)
+
+	c := s.Seal(msg)
+
+	out, err := s.Open(c)
+	assert.NoError(t, err)
+
+	assert.Equal(t, msg, out)
+}

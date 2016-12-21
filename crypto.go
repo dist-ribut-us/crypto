@@ -106,6 +106,17 @@ func GenerateKey() (*Pub, *Priv, error) {
 	return PubFromArr(pub), PrivFromArr(priv), nil
 }
 
+// RandomShared returns a random shared key that can be used for symmetric
+// ciphers
+func RandomShared() (*Shared, error) {
+	b := make([]byte, KeyLength)
+	_, err := rand.Read(b)
+
+	s := &Shared{}
+	copy(s[:], b)
+	return s, err
+}
+
 // KeyPairFromString takes a two base64 encoded strings and returns a keypair
 func KeyPairFromString(pubStr, privStr string) (*Pub, *Priv, error) {
 	pub := &Pub{}
@@ -298,4 +309,11 @@ func RandUint32() uint32 {
 	b := make([]byte, 4)
 	rand.Read(b)
 	return (uint32(b[0]) + uint32(b[1])<<8 + uint32(b[2])<<16 + uint32(b[3])<<24)
+}
+
+// RandUint32 returns a random int generated using crypto/rand
+func RandUint16() uint16 {
+	b := make([]byte, 2)
+	rand.Read(b)
+	return (uint16(b[0]) + uint16(b[1])<<8)
 }
