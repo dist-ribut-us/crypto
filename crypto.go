@@ -311,7 +311,7 @@ func RandUint32() uint32 {
 	return (uint32(b[0]) + uint32(b[1])<<8 + uint32(b[2])<<16 + uint32(b[3])<<24)
 }
 
-// RandUint32 returns a random int generated using crypto/rand
+// RandUint16 returns a random int generated using crypto/rand
 func RandUint16() uint16 {
 	b := make([]byte, 2)
 	rand.Read(b)

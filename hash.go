@@ -11,7 +11,9 @@ import (
 // DigestLength is the length of a SHA 256 hash digest
 const DigestLength = 32
 
-var WrongDigestLength = errors.New("Wrong Digest Length")
+// ErrWrongDigestLength is returned when trying to create a digest from data
+// of the wrong length
+var ErrWrongDigestLength = errors.New("Wrong Digest Length")
 
 // Digest wraps the output of a hash
 type Digest []byte
@@ -34,7 +36,7 @@ func DigestFromString(str string) (Digest, error) {
 		return nil, err
 	}
 	if len(b) != DigestLength {
-		return nil, WrongDigestLength
+		return nil, ErrWrongDigestLength
 	}
 	return Digest(b), err
 }
@@ -53,7 +55,7 @@ func DigestFromHex(hexStr string) (Digest, error) {
 		return nil, err
 	}
 	if len(b) != DigestLength {
-		return nil, WrongDigestLength
+		return nil, ErrWrongDigestLength
 	}
 	return Digest(b), err
 }
