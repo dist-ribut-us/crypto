@@ -203,22 +203,30 @@ func (pub *Pub) Precompute(priv *Priv) *Shared {
 	return shared
 }
 
-// Seal uses a random Nonce to seal a message using a shared key. Decyrpted
-// with Open
-func (shared *Shared) Seal(msg []byte) []byte {
+// Seal will seal message using a shared key and the given nonce. If the nonce
+// is nil, a random nonce is generated. Decyrpted with Open
+func (shared *Shared) Seal(msg []byte, nonce *Nonce) []byte {
 	out := make([]byte, NonceLength, len(msg)+box.Overhead+NonceLength)
-	nonce := &Nonce{}
-	rand.Read(nonce[:])
+	if nonce == nil {
+		nonce, _ = RandomNonce()
+	}
 	copy(out, nonce[:])
 
 	return box.SealAfterPrecomputation(out, msg, nonce.Arr(), shared.Arr())
 }
 
-// SealAll seals many messages with the same shared key
-func (shared *Shared) SealAll(msgs [][]byte) [][]byte {
+func RandomNonce() (*Nonce, error) {
+	nonce := &Nonce{}
+	_, err := rand.Read(nonce[:])
+	return nonce, err
+}
+
+// SealAll seals many messages with the same shared key. If nonce is nil, a
+// random nonce will be generated for each message.
+func (shared *Shared) SealAll(msgs [][]byte, nonce *Nonce) [][]byte {
 	ciphers := make([][]byte, len(msgs))
 	for i, msg := range msgs {
-		ciphers[i] = shared.Seal(msg)
+		ciphers[i] = shared.Seal(msg, nonce)
 	}
 	return ciphers
 }

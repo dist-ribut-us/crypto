@@ -35,7 +35,7 @@ func TestNonceBox(t *testing.T) {
 	msgA := make([]byte, 100)
 	rand.Read(msgA)
 
-	cipher := shared.Seal(msgA)
+	cipher := shared.Seal(msgA, nil)
 	msgB, err := shared.Open(cipher)
 	assert.NoError(t, err)
 	assert.Equal(t, msgA, msgB)
@@ -98,7 +98,7 @@ func TestRandomShared(t *testing.T) {
 	s, err := RandomShared()
 	assert.NoError(t, err)
 
-	c := s.Seal(msg)
+	c := s.Seal(msg, nil)
 
 	out, err := s.Open(c)
 	assert.NoError(t, err)
