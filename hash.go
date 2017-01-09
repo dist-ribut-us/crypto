@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"hash"
 )
 
 // DigestLength is the length of a SHA 256 hash digest
@@ -18,12 +19,41 @@ var ErrWrongDigestLength = errors.New("Wrong Digest Length")
 // Digest wraps the output of a hash
 type Digest []byte
 
-// SHA256 returns the sha256 Digest of a byte slice
-func SHA256(b []byte) Digest {
+// GetDigest returns the sha256 Digest of a byte slice
+func GetDigest(bs ...[]byte) Digest {
 	h := sha256.New()
-	h.Write(b)
+	for _, b := range bs {
+		h.Write(b)
+	}
 	return h.Sum(nil)
 }
+
+// Hasher represents a Hash that can continue to write data
+type Hasher interface {
+	Write(bs ...[]byte) Hasher
+	Digest() Digest
+}
+type hsh struct{ hash.Hash }
+
+// Hash returns a hasher, initilized by writing b to the hash.
+func Hash(bs ...[]byte) Hasher {
+	h := sha256.New()
+	for _, b := range bs {
+		h.Write(b)
+	}
+	return hsh{h}
+}
+
+// Write adds more data to the hash
+func (h hsh) Write(bs ...[]byte) Hasher {
+	for _, b := range bs {
+		h.Hash.Write(b)
+	}
+	return h
+}
+
+// Digest returns the digest of the hash at it's current state
+func (h hsh) Digest() Digest { return h.Hash.Sum(nil) }
 
 // String returns the base64 encoding of the digest
 func (d Digest) String() string { return base64.StdEncoding.EncodeToString(d) }
