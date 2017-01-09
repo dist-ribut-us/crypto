@@ -21,7 +21,7 @@ const IDLength = 10
 // first 10 bytes of the sha256 of a public key. While the chances of accidental
 // collision should be minimal, malicious collision should not be discounted. ID
 // can be used as to make hash tables more efficient, but should not be
-// substituded for a full key check.
+// substituted for a full key check.
 type ID [IDLength]byte
 
 // KeyRef is similar to ID for private keys. It can be useful for managing
@@ -215,6 +215,7 @@ func (shared *Shared) Seal(msg []byte, nonce *Nonce) []byte {
 	return box.SealAfterPrecomputation(out, msg, nonce.Arr(), shared.Arr())
 }
 
+// RandomNonce returns a Nonce with a cryptographically random value.
 func RandomNonce() (*Nonce, error) {
 	nonce := &Nonce{}
 	_, err := rand.Read(nonce[:])
