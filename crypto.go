@@ -11,7 +11,7 @@ import (
 // KeyLength of array applies to Public, Private and Shared keys.
 const KeyLength = 32
 
-// NonceLegnth of array
+// NonceLength of array
 const NonceLength = 24
 
 // IDLength of array
@@ -39,7 +39,7 @@ type Pub key
 // Priv key
 type Priv key
 
-// Shared key
+// Shared key. Shared keys are also used as symmetric keys.
 type Shared key
 
 // Arr returns a reference to the array underlying the public key
@@ -85,6 +85,18 @@ func keyFromArr(k *[KeyLength]byte) *key { return (*key)(k) }
 // Slice casts the public key to a byte slice
 func (pub *Pub) Slice() []byte { return pub[:] }
 
+// Slice casts the private key to a byte slice
+func (priv *Priv) Slice() []byte { return priv[:] }
+
+// Slice casts the public key to a byte slice
+func (shared *Shared) Slice() []byte { return shared[:] }
+
+// Slice casts the id to a byte slice
+func (id *ID) Slice() []byte { return id[:] }
+
+// Slice casts the nonce to a byte slice
+func (nonce *Nonce) Slice() []byte { return nonce[:] }
+
 // String returns the base64 encoding of the public key
 func (pub *Pub) String() string { return base64.StdEncoding.EncodeToString(pub[:]) }
 
@@ -94,8 +106,11 @@ func (priv *Priv) String() string { return base64.StdEncoding.EncodeToString(pri
 // String returns the base64 encoding of the shared key
 func (shared *Shared) String() string { return base64.StdEncoding.EncodeToString(shared[:]) }
 
-// String returns the base64 encoding of the ID
+// String returns the base64 encoding of the id
 func (id *ID) String() string { return base64.StdEncoding.EncodeToString(id[:]) }
+
+// String returns the base64 encoding of the nonce
+func (nonce *Nonce) String() string { return base64.StdEncoding.EncodeToString(nonce[:]) }
 
 // GenerateKey returns a public and private key.
 func GenerateKey() (*Pub, *Priv, error) {
@@ -119,35 +134,60 @@ func RandomShared() (*Shared, error) {
 
 // KeyPairFromString takes a two base64 encoded strings and returns a keypair
 func KeyPairFromString(pubStr, privStr string) (*Pub, *Priv, error) {
-	pub := &Pub{}
-	priv := &Priv{}
-
-	data, err := base64.StdEncoding.DecodeString(pubStr)
+	pub, err := PubFromString(pubStr)
 	if err != nil {
 		return nil, nil, err
 	}
-	copy(pub[:], data)
-
-	data, err = base64.StdEncoding.DecodeString(privStr)
+	priv, err := PrivFromString(privStr)
 	if err != nil {
 		return nil, nil, err
 	}
-	copy(priv[:], data)
-
 	return pub, priv, nil
 }
 
 // PubFromString takes a base64 encoded public key and returns it as a Pub
 func PubFromString(pubStr string) (*Pub, error) {
-	pub := &Pub{}
-
-	data, err := base64.StdEncoding.DecodeString(pubStr)
+	key, err := keyFromString(pubStr)
 	if err != nil {
 		return nil, err
 	}
-	copy(pub[:], data)
 
-	return pub, nil
+	p := Pub(*key)
+	return &p, nil
+}
+
+// PrivFromString takes a base64 encoded public key and returns it as a Priv
+func PrivFromString(privStr string) (*Priv, error) {
+	key, err := keyFromString(privStr)
+	if err != nil {
+		return nil, err
+	}
+
+	p := Priv(*key)
+	return &p, nil
+}
+
+// SharedFromString takes a base64 encoded public key and returns it as a Shared
+func SharedFromString(sharedStr string) (*Shared, error) {
+	key, err := keyFromString(sharedStr)
+	if err != nil {
+		return nil, err
+	}
+
+	s := Shared(*key)
+	return &s, nil
+}
+
+func keyFromString(str string) (*key, error) {
+	key := &key{}
+
+	data, err := base64.StdEncoding.DecodeString(str)
+	if err != nil {
+		return nil, err
+	}
+	copy(key[:], data)
+
+	return key, nil
 }
 
 // GetID returns the ID for a public key.
@@ -208,7 +248,11 @@ func (pub *Pub) Precompute(priv *Priv) *Shared {
 func (shared *Shared) Seal(msg []byte, nonce *Nonce) []byte {
 	out := make([]byte, NonceLength, len(msg)+box.Overhead+NonceLength)
 	if nonce == nil {
-		nonce, _ = RandomNonce()
+		var err error
+		nonce, err = RandomNonce()
+		if err != nil {
+			panic(err)
+		}
 	}
 	copy(out, nonce[:])
 
@@ -237,14 +281,34 @@ var ErrDecryptionFailed = errors.New("Decryption Failed")
 
 // Open will decipher a message ciphered with Seal.
 func (shared *Shared) Open(cipher []byte) ([]byte, error) {
+	if cipher == nil {
+		return nil, nil
+	}
 	nonce := &Nonce{}
+	if len(cipher) < NonceLength {
+		return nil, ErrDecryptionFailed
+	}
 	copy(nonce[:], cipher[:NonceLength])
 
 	data, ok := box.OpenAfterPrecomputation(nil, cipher[NonceLength:], nonce.Arr(), shared.Arr())
 	if !ok {
 		return nil, ErrDecryptionFailed
 	}
+	return data, nil
+}
 
+// NonceOpen will decipher a message with a specific nonce
+func (shared *Shared) NonceOpen(cipher []byte, nonce *Nonce) ([]byte, error) {
+	if cipher == nil {
+		return nil, nil
+	}
+	if nonce == nil {
+		nonce = zeroNonce
+	}
+	data, ok := box.OpenAfterPrecomputation(nil, cipher, nonce.Arr(), shared.Arr())
+	if !ok {
+		return nil, ErrDecryptionFailed
+	}
 	return data, nil
 }
 
@@ -307,7 +371,7 @@ func (nonce *Nonce) Inc() *Nonce {
 
 // RandInt returns a random int generated using crypto/rand
 func RandInt(max int) int {
-	//This is no good, because of the way it will wrap, some numbers will have twice the chance
+	//This is no good, because of the way it will wrap
 	b := make([]byte, 4)
 	rand.Read(b)
 	return (int(b[0]) + int(b[1])<<8 + int(b[2])<<16 + int(b[3])<<24) % max

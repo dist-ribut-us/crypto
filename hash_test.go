@@ -42,3 +42,16 @@ func TestHasher(t *testing.T) {
 
 	assert.Equal(t, expect, []byte(d))
 }
+
+func TestDigestToShared(t *testing.T) {
+	h := Hash([]byte("password"))
+	h.Write([]byte("salt"))
+	shared := h.Digest().Shared()
+	expect := []byte{
+		122, 55, 184, 92, 137, 24, 234, 193,
+		154, 144, 137, 192, 250, 90, 42, 180,
+		220, 227, 249, 5, 40, 220, 222, 236,
+		16, 139, 35, 221, 243, 96, 123, 153,
+	}
+	assert.Equal(t, expect, shared[:])
+}

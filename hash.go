@@ -55,6 +55,13 @@ func (h hsh) Write(bs ...[]byte) Hasher {
 // Digest returns the digest of the hash at it's current state
 func (h hsh) Digest() Digest { return h.Hash.Sum(nil) }
 
+// Shared uses a digest to create a shared key
+func (d Digest) Shared() *Shared {
+	var sh Shared
+	copy(sh[:], d)
+	return &sh
+}
+
 // String returns the base64 encoding of the digest
 func (d Digest) String() string { return base64.StdEncoding.EncodeToString(d) }
 

@@ -39,6 +39,34 @@ func TestNonceBox(t *testing.T) {
 	msgB, err := shared.Open(cipher)
 	assert.NoError(t, err)
 	assert.Equal(t, msgA, msgB)
+
+	// confirm that a bad key fails to decrypt in the correct manor
+	badKey, err := RandomShared()
+	assert.NoError(t, err)
+	badMsg, err := badKey.Open(cipher)
+	assert.Equal(t, ErrDecryptionFailed, err)
+	assert.Nil(t, badMsg)
+}
+
+func TestNonceBoxWithRandom(t *testing.T) {
+	shared, err := RandomShared()
+	assert.NoError(t, err)
+	assert.NotNil(t, shared, "shared should not be nil")
+
+	msgA := make([]byte, 24)
+	rand.Read(msgA)
+
+	cipher := shared.Seal(msgA, nil)
+	msgB, err := shared.Open(cipher)
+	assert.NoError(t, err)
+	assert.Equal(t, msgA, msgB)
+
+	// confirm that a bad key fails to decrypt in the correct manor
+	badKey, err := RandomShared()
+	assert.NoError(t, err)
+	badMsg, err := badKey.Open(cipher)
+	assert.Equal(t, ErrDecryptionFailed, err)
+	assert.Nil(t, badMsg)
 }
 
 func TestAnon(t *testing.T) {
@@ -104,4 +132,25 @@ func TestRandomShared(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, msg, out)
+}
+
+func TestStringRoundTrips(t *testing.T) {
+	pub, priv, err := GenerateKey()
+	assert.NoError(t, err)
+	assert.NotNil(t, pub, "Public key should not be nil")
+	assert.NotNil(t, priv, "Private key should not be nil")
+
+	pubRT, err := PubFromString(pub.String())
+	assert.NoError(t, err)
+	assert.Equal(t, pub, pubRT)
+
+	privRT, err := PrivFromString(priv.String())
+	assert.NoError(t, err)
+	assert.Equal(t, priv, privRT)
+
+	shared, err := RandomShared()
+	assert.NoError(t, err)
+	assert.NotNil(t, shared)
+	sharedRT, err := SharedFromString(shared.String())
+	assert.Equal(t, shared, sharedRT)
 }
