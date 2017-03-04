@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"errors"
 	"hash"
 )
 
@@ -14,7 +13,7 @@ const DigestLength = 32
 
 // ErrWrongDigestLength is returned when trying to create a digest from data
 // of the wrong length
-var ErrWrongDigestLength = errors.New("Wrong Digest Length")
+const ErrWrongDigestLength = defineErr("Wrong Digest Length")
 
 // Digest wraps the output of a hash
 type Digest []byte

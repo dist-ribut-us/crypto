@@ -4,9 +4,15 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"errors"
 	"golang.org/x/crypto/nacl/box"
 )
+
+// this allows errors to be defined as const instead of var
+type defineErr string
+
+func (d defineErr) Error() string {
+	return string(d)
+}
 
 // KeyLength of array applies to Public, Private and Shared keys.
 const KeyLength = 32
@@ -200,7 +206,7 @@ func (pub *Pub) GetID() *ID {
 }
 
 // ErrIncorrectIDSize when a byte slice length does not equal IDLength
-var ErrIncorrectIDSize = errors.New("Incorrect ID size")
+const ErrIncorrectIDSize = defineErr("Incorrect ID size")
 
 // IDFromSlice returns an ID from a byte slice. The values are copied, so the
 // slice can be modified after
@@ -223,7 +229,7 @@ func (priv *Priv) GetKeyRef() *KeyRef {
 }
 
 // ErrIncorrectPubKeySize when a byte slice length does not equal KeyLength
-var ErrIncorrectPubKeySize = errors.New("Incorrect Public key size")
+const ErrIncorrectPubKeySize = defineErr("Incorrect Public key size")
 
 // PubFromSlice converts a byte slice to a public key. The values are copied, so
 // the slice can be modified after.
@@ -277,7 +283,7 @@ func (shared *Shared) SealAll(msgs [][]byte, nonce *Nonce) [][]byte {
 }
 
 // ErrDecryptionFailed when no other information is available
-var ErrDecryptionFailed = errors.New("Decryption Failed")
+const ErrDecryptionFailed = defineErr("Decryption Failed")
 
 // Open will decipher a message ciphered with Seal.
 func (shared *Shared) Open(cipher []byte) ([]byte, error) {
