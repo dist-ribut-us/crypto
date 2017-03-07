@@ -196,6 +196,33 @@ func keyFromString(str string) (*key, error) {
 	return key, nil
 }
 
+// PubFromSlice converts a byte slice to a public key. The values are copied, so
+// the slice can be modified after.
+func PubFromSlice(bs []byte) *Pub {
+	pub := Pub(*keyFromSlice(bs))
+	return &pub
+}
+
+// PrivFromSlice converts a byte slice to a public key. The values are copied, so
+// the slice can be modified after.
+func PrivFromSlice(bs []byte) *Priv {
+	priv := Priv(*keyFromSlice(bs))
+	return &priv
+}
+
+// SharedFromSlice converts a byte slice to a public key. The values are copied, so
+// the slice can be modified after.
+func SharedFromSlice(bs []byte) *Shared {
+	shared := Shared(*keyFromSlice(bs))
+	return &shared
+}
+
+func keyFromSlice(bs []byte) *key {
+	key := &key{}
+	copy(key[:], bs)
+	return key
+}
+
 // GetID returns the ID for a public key.
 func (pub *Pub) GetID() *ID {
 	h := sha256.New()
@@ -230,17 +257,6 @@ func (priv *Priv) GetKeyRef() *KeyRef {
 
 // ErrIncorrectPubKeySize when a byte slice length does not equal KeyLength
 const ErrIncorrectPubKeySize = defineErr("Incorrect Public key size")
-
-// PubFromSlice converts a byte slice to a public key. The values are copied, so
-// the slice can be modified after.
-func PubFromSlice(b []byte) (*Pub, error) {
-	if len(b) != KeyLength {
-		return nil, ErrIncorrectPubKeySize
-	}
-	pub := &Pub{}
-	copy(pub[:], b)
-	return pub, nil
-}
 
 // Precompute returns a Shared key from a public and private key
 func (pub *Pub) Precompute(priv *Priv) *Shared {

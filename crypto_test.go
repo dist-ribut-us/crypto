@@ -152,5 +152,25 @@ func TestStringRoundTrips(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, shared)
 	sharedRT, err := SharedFromString(shared.String())
+	assert.NoError(t, err)
+	assert.Equal(t, shared, sharedRT)
+}
+
+func TestSliceRoundTrips(t *testing.T) {
+	pub, priv, err := GenerateKey()
+	assert.NoError(t, err)
+	assert.NotNil(t, pub, "Public key should not be nil")
+	assert.NotNil(t, priv, "Private key should not be nil")
+
+	pubRT := PubFromSlice(pub.Slice())
+	assert.Equal(t, pub, pubRT)
+
+	privRT := PrivFromSlice(priv.Slice())
+	assert.Equal(t, priv, privRT)
+
+	shared, err := RandomShared()
+	assert.NoError(t, err)
+	assert.NotNil(t, shared)
+	sharedRT := SharedFromSlice(shared.Slice())
 	assert.Equal(t, shared, sharedRT)
 }
