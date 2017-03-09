@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"golang.org/x/crypto/nacl/box"
+	"log"
 )
 
 // this allows errors to be defined as const instead of var
@@ -12,6 +13,37 @@ type defineErr string
 
 func (d defineErr) Error() string {
 	return string(d)
+}
+
+var errChan = make(chan error)
+
+// ErrChan passes errors that are unlikely and unrecoverable. To avoid having
+// many error bubbling paths and error checks at the top level, those errors are
+// logged and the error is sent to the error channel. ErrConfirm will also be
+// placed on the channel making it safe to read the error without letting
+// execution continue.
+func ErrChan() <-chan error { return errChan }
+
+// PanicOnError will cause crypto to panic instead of writing the error to the
+// error channel. It defaults to true, setting it false means that there is
+// an error handler in place that will read from ErrChan.
+var PanicOnError = true
+
+// ErrConfirm is placed on ErrChan when there is an error. Pulling this error
+// off the channel gives crypt permission to continue.
+var ErrConfirm = defineErr("Confirm Error Read")
+
+func logErr(err error) bool {
+	if err != nil {
+		log.Print(err)
+		if PanicOnError {
+			panic(err)
+		}
+		errChan <- err
+		errChan <- ErrConfirm
+		return true
+	}
+	return false
 }
 
 // KeyLength of array applies to Public, Private and Shared keys.
@@ -119,23 +151,24 @@ func (id *ID) String() string { return base64.StdEncoding.EncodeToString(id[:]) 
 func (nonce *Nonce) String() string { return base64.StdEncoding.EncodeToString(nonce[:]) }
 
 // GenerateKey returns a public and private key.
-func GenerateKey() (*Pub, *Priv, error) {
+func GenerateKey() (*Pub, *Priv) {
 	pub, priv, err := box.GenerateKey(rand.Reader)
-	if err != nil {
-		return nil, nil, err
-	}
-	return PubFromArr(pub), PrivFromArr(priv), nil
+	logErr(err)
+	return (*Pub)(pub), (*Priv)(priv)
 }
 
 // RandomShared returns a random shared key that can be used for symmetric
 // ciphers
-func RandomShared() (*Shared, error) {
+func RandomShared() *Shared {
 	b := make([]byte, KeyLength)
 	_, err := rand.Read(b)
+	if logErr(err) {
+		return nil
+	}
 
 	s := &Shared{}
 	copy(s[:], b)
-	return s, err
+	return s
 }
 
 // KeyPairFromString takes a two base64 encoded strings and returns a keypair
@@ -270,11 +303,7 @@ func (pub *Pub) Precompute(priv *Priv) *Shared {
 func (shared *Shared) Seal(msg []byte, nonce *Nonce) []byte {
 	out := make([]byte, NonceLength, len(msg)+box.Overhead+NonceLength)
 	if nonce == nil {
-		var err error
-		nonce, err = RandomNonce()
-		if err != nil {
-			panic(err)
-		}
+		nonce = RandomNonce()
 	}
 	copy(out, nonce[:])
 
@@ -282,10 +311,13 @@ func (shared *Shared) Seal(msg []byte, nonce *Nonce) []byte {
 }
 
 // RandomNonce returns a Nonce with a cryptographically random value.
-func RandomNonce() (*Nonce, error) {
+func RandomNonce() *Nonce {
 	nonce := &Nonce{}
 	_, err := rand.Read(nonce[:])
-	return nonce, err
+	if logErr(err) {
+		return nil
+	}
+	return nonce
 }
 
 // SealAll seals many messages with the same shared key. If nonce is nil, a
@@ -339,9 +371,9 @@ var zeroNonce = &Nonce{}
 // AnonSeal encrypts a message with a random key pair. The Nonce is always 0 and
 // the public key is prepended to the cipher. The recipient can open the message
 // but the sender remains anonymous.
-func (pub *Pub) AnonSeal(msg []byte) ([]byte, error) {
-	cipher, _, err := pub.AnonSealShared(msg)
-	return cipher, err
+func (pub *Pub) AnonSeal(msg []byte) []byte {
+	cipher, _ := pub.AnonSealShared(msg)
+	return cipher
 }
 
 // AnonOpen decrypts a cipher from AnonSeal or AnonSealShared.
@@ -354,13 +386,10 @@ func (priv *Priv) AnonOpen(cipher []byte) ([]byte, error) {
 // 0 and the public key is prepended to the cipher. The recipient can open the
 // message but the sender remains anonymous. This method also returns the shared
 // key for the message.
-func (pub *Pub) AnonSealShared(msg []byte) ([]byte, *Shared, error) {
-	otkPub, otkPriv, err := GenerateKey()
-	if err != nil {
-		return nil, nil, err
-	}
+func (pub *Pub) AnonSealShared(msg []byte) ([]byte, *Shared) {
+	otkPub, otkPriv := GenerateKey()
 	shared := pub.Precompute(otkPriv)
-	return box.SealAfterPrecomputation(otkPub[:], msg, zeroNonce.Arr(), shared.Arr()), shared, nil
+	return box.SealAfterPrecomputation(otkPub[:], msg, zeroNonce.Arr(), shared.Arr()), shared
 }
 
 // AnonOpenShared decrypts a cipher from AnonSeal or AnonSealShared and returns
@@ -393,22 +422,28 @@ func (nonce *Nonce) Inc() *Nonce {
 
 // RandInt returns a random int generated using crypto/rand
 func RandInt(max int) int {
-	//This is no good, because of the way it will wrap
+	// This is no good, because of the way it will wrap. Better would be to find
+	// the next largest power of two larger than max and pick random numbers in
+	// that range until there's a number less than max. Each pick will have at
+	// least a 50% chance so it shouldn't take long.
 	b := make([]byte, 4)
-	rand.Read(b)
+	_, err := rand.Read(b)
+	logErr(err)
 	return (int(b[0]) + int(b[1])<<8 + int(b[2])<<16 + int(b[3])<<24) % max
 }
 
 // RandUint32 returns a random int generated using crypto/rand
 func RandUint32() uint32 {
 	b := make([]byte, 4)
-	rand.Read(b)
+	_, err := rand.Read(b)
+	logErr(err)
 	return (uint32(b[0]) + uint32(b[1])<<8 + uint32(b[2])<<16 + uint32(b[3])<<24)
 }
 
 // RandUint16 returns a random int generated using crypto/rand
 func RandUint16() uint16 {
 	b := make([]byte, 2)
-	rand.Read(b)
+	_, err := rand.Read(b)
+	logErr(err)
 	return (uint16(b[0]) + uint16(b[1])<<8)
 }

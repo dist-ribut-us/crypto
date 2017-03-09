@@ -8,15 +8,13 @@ import (
 )
 
 func TestGenerateKey(t *testing.T) {
-	pu, pr, err := GenerateKey()
-	assert.NoError(t, err)
+	pu, pr := GenerateKey()
 	assert.NotNil(t, pu, "Public key should not be nil")
 	assert.NotNil(t, pr, "Private key should not be nil")
 }
 
 func TestGenerateID(t *testing.T) {
-	pu, pr, err := GenerateKey()
-	assert.NoError(t, err)
+	pu, pr := GenerateKey()
 	assert.NotNil(t, pu, "Public key should not be nil")
 	assert.NotNil(t, pr, "Private key should not be nil")
 
@@ -25,10 +23,8 @@ func TestGenerateID(t *testing.T) {
 }
 
 func TestNonceBox(t *testing.T) {
-	pubA, _, err := GenerateKey()
-	assert.NoError(t, err)
-	_, privB, err := GenerateKey()
-	assert.NoError(t, err)
+	pubA, _ := GenerateKey()
+	_, privB := GenerateKey()
 	shared := pubA.Precompute(privB)
 	assert.NotNil(t, shared, "shared should not be nil")
 
@@ -41,16 +37,14 @@ func TestNonceBox(t *testing.T) {
 	assert.Equal(t, msgA, msgB)
 
 	// confirm that a bad key fails to decrypt in the correct manor
-	badKey, err := RandomShared()
-	assert.NoError(t, err)
+	badKey := RandomShared()
 	badMsg, err := badKey.Open(cipher)
 	assert.Equal(t, ErrDecryptionFailed, err)
 	assert.Nil(t, badMsg)
 }
 
 func TestNonceBoxWithRandom(t *testing.T) {
-	shared, err := RandomShared()
-	assert.NoError(t, err)
+	shared := RandomShared()
 	assert.NotNil(t, shared, "shared should not be nil")
 
 	msgA := make([]byte, 24)
@@ -62,34 +56,29 @@ func TestNonceBoxWithRandom(t *testing.T) {
 	assert.Equal(t, msgA, msgB)
 
 	// confirm that a bad key fails to decrypt in the correct manor
-	badKey, err := RandomShared()
-	assert.NoError(t, err)
+	badKey := RandomShared()
 	badMsg, err := badKey.Open(cipher)
 	assert.Equal(t, ErrDecryptionFailed, err)
 	assert.Nil(t, badMsg)
 }
 
 func TestAnon(t *testing.T) {
-	pub, priv, err := GenerateKey()
-	assert.NoError(t, err)
+	pub, priv := GenerateKey()
 	assert.NotNil(t, pub, "Public key should not be nil")
 	assert.NotNil(t, priv, "Private key should not be nil")
 
 	msg := make([]byte, 100)
 	rand.Read(msg)
 
-	ciph, err := pub.AnonSeal(msg)
-	assert.NoError(t, err)
+	ciph := pub.AnonSeal(msg)
 	deci, err := priv.AnonOpen(ciph)
 	assert.NoError(t, err)
 	assert.Equal(t, msg, deci)
 }
 
 func TestUnmacd(t *testing.T) {
-	pubA, _, err := GenerateKey()
-	assert.NoError(t, err)
-	_, privB, err := GenerateKey()
-	assert.NoError(t, err)
+	pubA, _ := GenerateKey()
+	_, privB := GenerateKey()
 	shared := pubA.Precompute(privB)
 	if shared == nil {
 		t.Error("Got nil")
@@ -123,9 +112,7 @@ func TestNonceInc(t *testing.T) {
 
 func TestRandomShared(t *testing.T) {
 	msg := []byte("This is a test")
-	s, err := RandomShared()
-	assert.NoError(t, err)
-
+	s := RandomShared()
 	c := s.Seal(msg, nil)
 
 	out, err := s.Open(c)
@@ -135,8 +122,7 @@ func TestRandomShared(t *testing.T) {
 }
 
 func TestStringRoundTrips(t *testing.T) {
-	pub, priv, err := GenerateKey()
-	assert.NoError(t, err)
+	pub, priv := GenerateKey()
 	assert.NotNil(t, pub, "Public key should not be nil")
 	assert.NotNil(t, priv, "Private key should not be nil")
 
@@ -148,8 +134,7 @@ func TestStringRoundTrips(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, priv, privRT)
 
-	shared, err := RandomShared()
-	assert.NoError(t, err)
+	shared := RandomShared()
 	assert.NotNil(t, shared)
 	sharedRT, err := SharedFromString(shared.String())
 	assert.NoError(t, err)
@@ -157,8 +142,7 @@ func TestStringRoundTrips(t *testing.T) {
 }
 
 func TestSliceRoundTrips(t *testing.T) {
-	pub, priv, err := GenerateKey()
-	assert.NoError(t, err)
+	pub, priv := GenerateKey()
 	assert.NotNil(t, pub, "Public key should not be nil")
 	assert.NotNil(t, priv, "Private key should not be nil")
 
@@ -168,8 +152,7 @@ func TestSliceRoundTrips(t *testing.T) {
 	privRT := PrivFromSlice(priv.Slice())
 	assert.Equal(t, priv, privRT)
 
-	shared, err := RandomShared()
-	assert.NoError(t, err)
+	shared := RandomShared()
 	assert.NotNil(t, shared)
 	sharedRT := SharedFromSlice(shared.Slice())
 	assert.Equal(t, shared, sharedRT)
