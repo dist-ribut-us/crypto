@@ -273,9 +273,6 @@ func (priv *Priv) GetKeyRef() *KeyRef {
 	return keyRef
 }
 
-// ErrIncorrectPubKeySize when a byte slice length does not equal KeyLength
-const ErrIncorrectPubKeySize = defineErr("Incorrect Public key size")
-
 // Precompute returns a Shared key from a public and private key
 func (pub *Pub) Precompute(priv *Priv) *Shared {
 	shared := &Shared{}

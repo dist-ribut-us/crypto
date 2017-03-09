@@ -1,7 +1,6 @@
 package crypto
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -16,21 +15,23 @@ const DigestLength = 32
 const ErrWrongDigestLength = defineErr("Wrong Digest Length")
 
 // Digest wraps the output of a hash
-type Digest []byte
+type Digest [DigestLength]byte
 
 // GetDigest returns the sha256 Digest of a byte slice
-func GetDigest(bs ...[]byte) Digest {
+func GetDigest(bs ...[]byte) *Digest {
 	h := sha256.New()
 	for _, b := range bs {
 		h.Write(b)
 	}
-	return h.Sum(nil)
+	d := &Digest{}
+	copy(d[:], h.Sum(nil))
+	return d
 }
 
 // Hasher represents a Hash that can continue to write data
 type Hasher interface {
 	Write(bs ...[]byte) Hasher
-	Digest() Digest
+	Digest() *Digest
 }
 type hsh struct{ hash.Hash }
 
@@ -52,21 +53,42 @@ func (h hsh) Write(bs ...[]byte) Hasher {
 }
 
 // Digest returns the digest of the hash at it's current state
-func (h hsh) Digest() Digest { return h.Hash.Sum(nil) }
+func (h hsh) Digest() *Digest {
+	d := &Digest{}
+	copy(d[:], h.Hash.Sum(nil))
+	return d
+}
 
 // Shared uses a digest to create a shared key
-func (d Digest) Shared() *Shared {
-	var sh Shared
-	copy(sh[:], d)
-	return &sh
+func (d *Digest) Shared() *Shared { return (*Shared)(d) }
+
+// Slice return the digest as a byte slice
+func (d *Digest) Slice() []byte {
+	if d == nil {
+		return nil
+	}
+	return d[:]
 }
 
 // String returns the base64 encoding of the digest
-func (d Digest) String() string { return base64.StdEncoding.EncodeToString(d) }
+func (d *Digest) String() string {
+	if d == nil {
+		return ""
+	}
+	return base64.StdEncoding.EncodeToString(d[:])
+}
+
+// DigestFromSlice converts a byte slice to a public key. The values are copied,
+// so the slice can be modified after.
+func DigestFromSlice(bs []byte) *Digest {
+	d := &Digest{}
+	copy(d[:], bs)
+	return d
+}
 
 // DigestFromString returns a digest from a hex string as would be returned by a
 // call to String
-func DigestFromString(str string) (Digest, error) {
+func DigestFromString(str string) (*Digest, error) {
 	b, err := base64.StdEncoding.DecodeString(str)
 	if err != nil {
 		return nil, err
@@ -74,18 +96,30 @@ func DigestFromString(str string) (Digest, error) {
 	if len(b) != DigestLength {
 		return nil, ErrWrongDigestLength
 	}
-	return Digest(b), err
+	d := &Digest{}
+	copy(d[:], b)
+	return d, nil
 }
 
 // Equal checks if two digests are equal
-func (d Digest) Equal(other Digest) bool { return bytes.Equal(d, other) }
+func (d *Digest) Equal(other *Digest) bool {
+	if d == nil || other == nil {
+		return d == nil && other == nil
+	}
+	return *d == *other
+}
 
 // Hex returns the hexidecimal string representation of the digest
-func (d Digest) Hex() string { return hex.EncodeToString(d) }
+func (d *Digest) Hex() string {
+	if d == nil {
+		return ""
+	}
+	return hex.EncodeToString(d[:])
+}
 
 // DigestFromHex returns a digest from a hex string as would be returned by a
 // call to Hex
-func DigestFromHex(hexStr string) (Digest, error) {
+func DigestFromHex(hexStr string) (*Digest, error) {
 	b, err := hex.DecodeString(hexStr)
 	if err != nil {
 		return nil, err
@@ -93,5 +127,7 @@ func DigestFromHex(hexStr string) (Digest, error) {
 	if len(b) != DigestLength {
 		return nil, ErrWrongDigestLength
 	}
-	return Digest(b), err
+	d := &Digest{}
+	copy(d[:], b)
+	return d, nil
 }

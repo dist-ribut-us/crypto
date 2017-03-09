@@ -8,6 +8,7 @@ import (
 func TestDigest(t *testing.T) {
 	b := []byte("this is a test")
 	d := GetDigest(b)
+	assert.NotNil(t, d)
 
 	expect := []byte{
 		46, 153, 117, 133, 72, 151, 42, 142,
@@ -15,7 +16,7 @@ func TestDigest(t *testing.T) {
 		114, 240, 111, 63, 246, 160, 22, 133,
 		31, 69, 195, 152, 115, 43, 197, 12,
 	}
-	assert.Equal(t, expect, []byte(d))
+	assert.Equal(t, expect, d[:])
 	assert.Equal(t, "Lpl1hUiXKo6IIq1H+hAX/3Lwbz/2oBaFH0XDmHMrxQw=", d.String())
 	d2, err := DigestFromString(d.String())
 	assert.NoError(t, err)
@@ -40,7 +41,7 @@ func TestHasher(t *testing.T) {
 		31, 69, 195, 152, 115, 43, 197, 12,
 	}
 
-	assert.Equal(t, expect, []byte(d))
+	assert.Equal(t, expect, d[:])
 }
 
 func TestDigestToShared(t *testing.T) {
