@@ -15,32 +15,17 @@ func (d defineErr) Error() string {
 	return string(d)
 }
 
-var errChan = make(chan error)
-
-// ErrChan passes errors that are unlikely and unrecoverable. To avoid having
-// many error bubbling paths and error checks at the top level, those errors are
-// logged and the error is sent to the error channel. ErrConfirm will also be
-// placed on the channel making it safe to read the error without letting
-// execution continue.
-func ErrChan() <-chan error { return errChan }
-
-// PanicOnError will cause crypto to panic instead of writing the error to the
-// error channel. It defaults to true, setting it false means that there is
-// an error handler in place that will read from ErrChan.
-var PanicOnError = true
-
-// ErrConfirm is placed on ErrChan when there is an error. Pulling this error
-// off the channel gives crypt permission to continue.
-var ErrConfirm = defineErr("Confirm Error Read")
+// InterruptHandler will be called in the case of a set of very rare errors. By
+// default, the InterruptHandler will panic. Only main should change the
+// InterruptHandler.
+var InterruptHandler = func(err error) {
+	panic(err)
+}
 
 func logErr(err error) bool {
 	if err != nil {
 		log.Print(err)
-		if PanicOnError {
-			panic(err)
-		}
-		errChan <- err
-		errChan <- ErrConfirm
+		InterruptHandler(err)
 		return true
 	}
 	return false
