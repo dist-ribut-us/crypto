@@ -4,16 +4,10 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"github.com/dist-ribut-us/errors"
 	"golang.org/x/crypto/nacl/box"
 	"log"
 )
-
-// this allows errors to be defined as const instead of var
-type defineErr string
-
-func (d defineErr) Error() string {
-	return string(d)
-}
 
 // InterruptHandler will be called in the case of a set of very rare errors. By
 // default, the InterruptHandler will panic. Only main should change the
@@ -251,7 +245,7 @@ func (pub *Pub) GetID() *ID {
 }
 
 // ErrIncorrectIDSize when a byte slice length does not equal IDLength
-const ErrIncorrectIDSize = defineErr("Incorrect ID size")
+const ErrIncorrectIDSize = errors.String("Incorrect ID size")
 
 // IDFromSlice returns an ID from a byte slice. The values are copied, so the
 // slice can be modified after
@@ -313,7 +307,7 @@ func (shared *Shared) SealAll(msgs [][]byte, nonce *Nonce) [][]byte {
 }
 
 // ErrDecryptionFailed when no other information is available
-const ErrDecryptionFailed = defineErr("Decryption Failed")
+const ErrDecryptionFailed = errors.String("Decryption Failed")
 
 // Open will decipher a message ciphered with Seal.
 func (shared *Shared) Open(cipher []byte) ([]byte, error) {
