@@ -291,6 +291,27 @@ func (shared *Shared) Seal(msg []byte, nonce *Nonce) []byte {
 	return box.SealAfterPrecomputation(out, msg, nonce.Arr(), shared.Arr())
 }
 
+// SealPackets will seal message using a shared key and the given nonce. If the
+// nonce is nil, a random nonce is generated. The tag will be prepended, but
+// not encrypted.
+func (shared *Shared) SealPackets(tag []byte, msgs [][]byte, nonce *Nonce) [][]byte {
+	tl := len(tag)
+	pkts := make([][]byte, len(msgs))
+	if nonce == nil {
+		nonce = RandomNonce()
+	}
+	ln, cp := tl+NonceLength, tl+NonceLength+box.Overhead
+	for i, msg := range msgs {
+		pkt := make([]byte, ln, cp+len(msg))
+		copy(pkt, tag)
+		copy(pkt[tl:], nonce[:])
+		pkts[i] = box.SealAfterPrecomputation(pkt, msg, nonce.Arr(), shared.Arr())
+		nonce.Inc()
+	}
+
+	return pkts
+}
+
 // RandomNonce returns a Nonce with a cryptographically random value.
 func RandomNonce() *Nonce {
 	nonce := &Nonce{}

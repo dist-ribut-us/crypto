@@ -157,3 +157,21 @@ func TestSliceRoundTrips(t *testing.T) {
 	sharedRT := SharedFromSlice(shared.Slice())
 	assert.Equal(t, shared, sharedRT)
 }
+
+func TestSealPackets(t *testing.T) {
+	shared := RandomShared()
+
+	msgs := make([][]byte, 10)
+	for i := range msgs {
+		msgs[i] = make([]byte, 100)
+		rand.Read(msgs[i])
+	}
+	pkts := shared.SealPackets([]byte{111}, msgs, nil)
+
+	for i, pkt := range pkts {
+		assert.EqualValues(t, 111, pkt[0])
+		msg, err := shared.Open(pkt[1:])
+		assert.NoError(t, err)
+		assert.Equal(t, msgs[i], msg)
+	}
+}
