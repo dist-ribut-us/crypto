@@ -13,7 +13,12 @@ import (
 // default, the InterruptHandler will panic. Only main should change the
 // InterruptHandler.
 var InterruptHandler = func(err error) {
-	panic(err)
+	go func() {
+		// panic in goroutine so that it won't bubble and potentially be caught by
+		// resolve in another package
+		panic(err)
+	}()
+	make(chan bool) <- false //block forever
 }
 
 func logErr(err error) bool {
