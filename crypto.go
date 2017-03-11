@@ -21,7 +21,7 @@ var InterruptHandler = func(err error) {
 	make(chan bool) <- false //block forever
 }
 
-func logErr(err error) bool {
+func randReadErr(err error) bool {
 	if err != nil {
 		log.Print(err)
 		InterruptHandler(err)
@@ -141,7 +141,7 @@ func (nonce *Nonce) String() string { return encodeToString(nonce[:]) }
 // GenerateKey returns a public and private key.
 func GenerateKey() (*Pub, *Priv) {
 	pub, priv, err := box.GenerateKey(rand.Reader)
-	logErr(err)
+	randReadErr(err)
 	return (*Pub)(pub), (*Priv)(priv)
 }
 
@@ -150,7 +150,7 @@ func GenerateKey() (*Pub, *Priv) {
 func RandomShared() *Shared {
 	b := make([]byte, KeyLength)
 	_, err := rand.Read(b)
-	if logErr(err) {
+	if randReadErr(err) {
 		return nil
 	}
 
@@ -320,7 +320,7 @@ func (shared *Shared) SealPackets(tag []byte, msgs [][]byte, nonce *Nonce) [][]b
 func RandomNonce() *Nonce {
 	nonce := &Nonce{}
 	_, err := rand.Read(nonce[:])
-	if logErr(err) {
+	if randReadErr(err) {
 		return nil
 	}
 	return nonce
@@ -428,21 +428,42 @@ func (nonce *Nonce) Inc() *Nonce {
 
 // RandInt returns a random int generated using crypto/rand
 func RandInt(max int) int {
-	// This is no good, because of the way it will wrap. Better would be to find
-	// the next largest power of two larger than max and pick random numbers in
-	// that range until there's a number less than max. Each pick will have at
-	// least a 50% chance so it shouldn't take long.
-	b := make([]byte, 4)
+	bits := 0
+	for c := max; c > 0; bits++ {
+		c >>= 1
+	}
+	for {
+		r := randBits(bits)
+		if r < max {
+			return r
+		}
+	}
+}
+
+func randBits(bits int) int {
+	b := make([]byte, (bits/8)+1)
 	_, err := rand.Read(b)
-	logErr(err)
-	return (int(b[0]) + int(b[1])<<8 + int(b[2])<<16 + int(b[3])<<24) % max
+	randReadErr(err)
+	var i int
+	for ; bits > 8; bits -= 8 {
+		i <<= 8
+		i += int(b[0])
+		b = b[1:]
+	}
+	i <<= uint(bits)
+	var mask byte
+	for ; bits > 0; bits-- {
+		mask = (mask << 1) + 1
+	}
+	i += int(b[0] & mask)
+	return i
 }
 
 // RandUint32 returns a random int generated using crypto/rand
 func RandUint32() uint32 {
 	b := make([]byte, 4)
 	_, err := rand.Read(b)
-	logErr(err)
+	randReadErr(err)
 	return (uint32(b[0]) + uint32(b[1])<<8 + uint32(b[2])<<16 + uint32(b[3])<<24)
 }
 
@@ -450,6 +471,6 @@ func RandUint32() uint32 {
 func RandUint16() uint16 {
 	b := make([]byte, 2)
 	_, err := rand.Read(b)
-	logErr(err)
+	randReadErr(err)
 	return (uint16(b[0]) + uint16(b[1])<<8)
 }
