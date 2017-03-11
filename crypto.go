@@ -30,6 +30,10 @@ func logErr(err error) bool {
 	return false
 }
 
+// Use URL encoding standard so / doesn't give us trouble
+var encodeToString = base64.URLEncoding.EncodeToString
+var decodeString = base64.URLEncoding.DecodeString
+
 // KeyLength of array applies to Public, Private and Shared keys.
 const KeyLength = 32
 
@@ -120,19 +124,19 @@ func (id *ID) Slice() []byte { return id[:] }
 func (nonce *Nonce) Slice() []byte { return nonce[:] }
 
 // String returns the base64 encoding of the public key
-func (pub *Pub) String() string { return base64.StdEncoding.EncodeToString(pub[:]) }
+func (pub *Pub) String() string { return encodeToString(pub[:]) }
 
 // String returns the base64 encoding of the private key
-func (priv *Priv) String() string { return base64.StdEncoding.EncodeToString(priv[:]) }
+func (priv *Priv) String() string { return encodeToString(priv[:]) }
 
 // String returns the base64 encoding of the shared key
-func (shared *Shared) String() string { return base64.StdEncoding.EncodeToString(shared[:]) }
+func (shared *Shared) String() string { return encodeToString(shared[:]) }
 
 // String returns the base64 encoding of the id
-func (id *ID) String() string { return base64.StdEncoding.EncodeToString(id[:]) }
+func (id *ID) String() string { return encodeToString(id[:]) }
 
 // String returns the base64 encoding of the nonce
-func (nonce *Nonce) String() string { return base64.StdEncoding.EncodeToString(nonce[:]) }
+func (nonce *Nonce) String() string { return encodeToString(nonce[:]) }
 
 // GenerateKey returns a public and private key.
 func GenerateKey() (*Pub, *Priv) {
@@ -204,7 +208,7 @@ func SharedFromString(sharedStr string) (*Shared, error) {
 func keyFromString(str string) (*key, error) {
 	key := &key{}
 
-	data, err := base64.StdEncoding.DecodeString(str)
+	data, err := decodeString(str)
 	if err != nil {
 		return nil, err
 	}

@@ -2,7 +2,6 @@ package crypto
 
 import (
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"github.com/dist-ribut-us/errors"
 	"hash"
@@ -76,7 +75,7 @@ func (d *Digest) String() string {
 	if d == nil {
 		return ""
 	}
-	return base64.StdEncoding.EncodeToString(d[:])
+	return encodeToString(d[:])
 }
 
 // DigestFromSlice converts a byte slice to a public key. The values are copied,
@@ -90,7 +89,7 @@ func DigestFromSlice(bs []byte) *Digest {
 // DigestFromString returns a digest from a hex string as would be returned by a
 // call to String
 func DigestFromString(str string) (*Digest, error) {
-	b, err := base64.StdEncoding.DecodeString(str)
+	b, err := decodeString(str)
 	if err != nil {
 		return nil, err
 	}

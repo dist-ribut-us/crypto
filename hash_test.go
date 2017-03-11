@@ -17,7 +17,7 @@ func TestDigest(t *testing.T) {
 		31, 69, 195, 152, 115, 43, 197, 12,
 	}
 	assert.Equal(t, expect, d[:])
-	assert.Equal(t, "Lpl1hUiXKo6IIq1H+hAX/3Lwbz/2oBaFH0XDmHMrxQw=", d.String())
+	assert.Equal(t, "Lpl1hUiXKo6IIq1H-hAX_3Lwbz_2oBaFH0XDmHMrxQw=", d.String())
 	d2, err := DigestFromString(d.String())
 	assert.NoError(t, err)
 	assert.True(t, d.Equal(d2))
