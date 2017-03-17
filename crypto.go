@@ -249,10 +249,8 @@ func keyFromSlice(bs []byte) *key {
 
 // GetID returns the ID for a public key.
 func (pub *Pub) GetID() *ID {
-	h := sha256.New()
-	h.Write(pub[:])
 	id := &ID{}
-	copy(id[:], h.Sum(nil)[:IDLength])
+	copy(id[:], Hash(pub[:]).Digest()[:])
 	return id
 }
 
