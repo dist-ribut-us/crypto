@@ -23,10 +23,12 @@ func TestGenerateID(t *testing.T) {
 }
 
 func TestNonceBox(t *testing.T) {
-	pubA, _ := GenerateKey()
-	_, privB := GenerateKey()
+	pubA, privA := GenerateKey()
+	pubB, privB := GenerateKey()
 	shared := pubA.Precompute(privB)
 	assert.NotNil(t, shared, "shared should not be nil")
+
+	assert.Equal(t, pubA.Precompute(privB), pubB.Precompute(privA))
 
 	msgA := make([]byte, 100)
 	rand.Read(msgA)
@@ -70,19 +72,23 @@ func TestAnon(t *testing.T) {
 	msg := make([]byte, 100)
 	rand.Read(msg)
 
-	ciph := pub.AnonSeal(msg)
-	deci, err := priv.AnonOpen(ciph)
+	c, s1 := pub.AnonSealShared([]byte{1, 2, 3}, msg)
+	assert.Equal(t, []byte{1, 2, 3}, c[:3])
+	p, s2, err := priv.AnonOpenShared(c[3:])
 	assert.NoError(t, err)
-	assert.Equal(t, msg, deci)
+	assert.Equal(t, s1, s2)
+	assert.Equal(t, msg, p)
+
+	p, err = priv.AnonOpen(pub.AnonSeal(msg))
+	assert.NoError(t, err)
+	assert.Equal(t, msg, p)
 }
 
 func TestUnmacd(t *testing.T) {
 	pubA, _ := GenerateKey()
 	_, privB := GenerateKey()
 	shared := pubA.Precompute(privB)
-	if shared == nil {
-		t.Error("Got nil")
-	}
+	assert.NotNil(t, shared)
 
 	nonce := &Nonce{}
 	nonce[0] = 1
@@ -166,13 +172,13 @@ func TestSealPackets(t *testing.T) {
 		msgs[i] = make([]byte, 100)
 		rand.Read(msgs[i])
 	}
-	pkts := shared.SealPackets([]byte{111}, msgs, nil)
+	pkts := shared.SealPackets([]byte{111}, msgs, nil, 2)
 
 	for i, pkt := range pkts {
 		assert.EqualValues(t, 111, pkt[0])
 		msg, err := shared.Open(pkt[1:])
 		assert.NoError(t, err)
-		assert.Equal(t, msgs[i], msg)
+		assert.Equal(t, msgs[i][2:], msg)
 	}
 }
 

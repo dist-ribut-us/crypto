@@ -34,6 +34,9 @@ func randReadErr(err error) bool {
 var encodeToString = base64.URLEncoding.EncodeToString
 var decodeString = base64.URLEncoding.DecodeString
 
+// Overhead copies box.Overhead
+const Overhead = box.Overhead
+
 // KeyLength of array applies to Public, Private and Shared keys.
 const KeyLength = 32
 
@@ -297,8 +300,8 @@ func (shared *Shared) Seal(msg []byte, nonce *Nonce) []byte {
 
 // SealPackets will seal message using a shared key and the given nonce. If the
 // nonce is nil, a random nonce is generated. The tag will be prepended, but
-// not encrypted.
-func (shared *Shared) SealPackets(tag []byte, msgs [][]byte, nonce *Nonce) [][]byte {
+// not encrypted. Trim removes tags from the start of each packet.
+func (shared *Shared) SealPackets(tag []byte, msgs [][]byte, nonce *Nonce, trim int) [][]byte {
 	tl := len(tag)
 	pkts := make([][]byte, len(msgs))
 	if nonce == nil {
@@ -306,10 +309,10 @@ func (shared *Shared) SealPackets(tag []byte, msgs [][]byte, nonce *Nonce) [][]b
 	}
 	ln, cp := tl+NonceLength, tl+NonceLength+box.Overhead
 	for i, msg := range msgs {
-		pkt := make([]byte, ln, cp+len(msg))
+		pkt := make([]byte, ln, cp+len(msg)-trim)
 		copy(pkt, tag)
 		copy(pkt[tl:], nonce[:])
-		pkts[i] = box.SealAfterPrecomputation(pkt, msg, nonce.Arr(), shared.Arr())
+		pkts[i] = box.SealAfterPrecomputation(pkt, msg[trim:], nonce.Arr(), shared.Arr())
 		nonce.Inc()
 	}
 
@@ -329,9 +332,13 @@ func RandomNonce() *Nonce {
 // SealAll seals many messages with the same shared key. If nonce is nil, a
 // random nonce will be generated for each message.
 func (shared *Shared) SealAll(msgs [][]byte, nonce *Nonce) [][]byte {
+	if nonce == nil {
+		nonce = RandomNonce()
+	}
 	ciphers := make([][]byte, len(msgs))
 	for i, msg := range msgs {
 		ciphers[i] = shared.Seal(msg, nonce)
+		nonce.Inc()
 	}
 	return ciphers
 }
@@ -378,7 +385,15 @@ var zeroNonce = &Nonce{}
 // the public key is prepended to the cipher. The recipient can open the message
 // but the sender remains anonymous.
 func (pub *Pub) AnonSeal(msg []byte) []byte {
-	cipher, _ := pub.AnonSealShared(msg)
+	cipher, _ := pub.AnonSealShared(nil, msg)
+	return cipher
+}
+
+// TagAnonSeal encrypts a message with a random key pair and prepends a byte
+// slice tag. The Nonce is always 0 and the public key is prepended to the
+// cipher. The recipient can open the message but the sender remains anonymous.
+func (pub *Pub) TagAnonSeal(tag, msg []byte) []byte {
+	cipher, _ := pub.AnonSealShared(tag, msg)
 	return cipher
 }
 
@@ -392,10 +407,14 @@ func (priv *Priv) AnonOpen(cipher []byte) ([]byte, error) {
 // 0 and the public key is prepended to the cipher. The recipient can open the
 // message but the sender remains anonymous. This method also returns the shared
 // key for the message.
-func (pub *Pub) AnonSealShared(msg []byte) ([]byte, *Shared) {
+func (pub *Pub) AnonSealShared(tag, msg []byte) ([]byte, *Shared) {
 	otkPub, otkPriv := GenerateKey()
 	shared := pub.Precompute(otkPriv)
-	return box.SealAfterPrecomputation(otkPub[:], msg, zeroNonce.Arr(), shared.Arr()), shared
+	l := len(tag)
+	bts := make([]byte, l+KeyLength, box.Overhead+l+len(msg))
+	copy(bts, tag)
+	copy(bts[l:], otkPub[:])
+	return box.SealAfterPrecomputation(bts, msg, zeroNonce.Arr(), shared.Arr()), shared
 }
 
 // AnonOpenShared decrypts a cipher from AnonSeal or AnonSealShared and returns
