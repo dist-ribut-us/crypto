@@ -450,14 +450,14 @@ func RandInt(max int) int {
 		c >>= 1
 	}
 	for {
-		r := randBits(bits)
+		r := randInt(bits)
 		if r < max {
 			return r
 		}
 	}
 }
 
-func randBits(bits int) int {
+func randInt(bits int) int {
 	b := make([]byte, (bits/8)+1)
 	_, err := rand.Read(b)
 	randReadErr(err)
