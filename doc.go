@@ -1,5 +1,5 @@
 // Package crypto wraps many of the standard Go crypto tools. The most significant
-// feature is providing types that distinguish Public and Private keys, rather
+// feature is providing types that distinguish XchgPublic and XchgPrivate keys, rather
 // than using slices or arrays of bytes directly.
 //
 // Crypto also provides an Un-MAC'd variant of the tools from

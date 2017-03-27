@@ -20,7 +20,7 @@ the original thread.
 
 Functions that can trigger InterruptHandler:
 * GenerateKey
-* RandomShared
+* RandomSymmetric
 * RandomNonce
 * RandInt
 * RandUint32

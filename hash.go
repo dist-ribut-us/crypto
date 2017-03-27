@@ -59,8 +59,8 @@ func (h hsh) Digest() *Digest {
 	return d
 }
 
-// Shared uses a digest to create a shared key
-func (d *Digest) Shared() *Shared { return (*Shared)(d) }
+// Symmetric uses a digest to create a shared key
+func (d *Digest) Symmetric() *Symmetric { return (*Symmetric)(d) }
 
 // Slice return the digest as a byte slice
 func (d *Digest) Slice() []byte {

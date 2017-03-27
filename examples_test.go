@@ -2,14 +2,16 @@ package crypto
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/nacl/box"
 	"testing"
-  "crypto/ecdsa"
-  "crypto/elliptic"
 )
 
-func TestSharedExample(t *testing.T) {
+func TestSymmetricExample(t *testing.T) {
 	pubA, privA, err := box.GenerateKey(rand.Reader)
 	if err != nil {
 		t.Error(err)
@@ -29,7 +31,7 @@ func TestSharedExample(t *testing.T) {
 	box.Precompute(sharedAB, pubA, privB)
 	box.Precompute(sharedBA, pubB, privA)
 	if !bytes.Equal(sharedAB[:], sharedBA[:]) {
-		t.Error("Shared secret is not shared")
+		t.Error("Symmetric secret is not shared")
 	}
 }
 
@@ -65,27 +67,41 @@ func TestBoxExample(t *testing.T) {
 	}
 }
 
-func TestECDSA(t *testing.T){
-  curve := elliptic.P256()
-  priv, err := ecdsa.GenerateKey(curve, rand.Reader)
-  if err != nil{
-    t.Error(err)
-    return
-  }
+func TestECDSA(t *testing.T) {
+	curve := elliptic.P256()
+	priv, err := ecdsa.GenerateKey(curve, rand.Reader)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
-  hash := make([]byte,255)
-  for i:=0;i<255;i++{
-    hash[i]=byte(i)
-  }
+	hash := make([]byte, 255)
+	for i := 0; i < 255; i++ {
+		hash[i] = byte(i)
+	}
 
-  r,s,err := ecdsa.Sign(rand.Reader, priv, hash)
-  if err != nil{
-    t.Error(err)
-    return
-  }
+	r, s, err := ecdsa.Sign(rand.Reader, priv, hash)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
-  verified := ecdsa.Verify(&priv.PublicKey, hash, r, s)
-  if !verified{
-    t.Error("Verification failed")
-  }
+	verified := ecdsa.Verify(&priv.PublicKey, hash, r, s)
+	if !verified {
+		t.Error("Verification failed")
+	}
+}
+
+func TestCurve25519(t *testing.T) {
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	assert.NoError(t, err)
+	assert.NotNil(t, pub)
+	assert.NotNil(t, priv)
+
+	data := make([]byte, 1000)
+	rand.Read(data)
+
+	// sig is 64 bytes
+	sig := ed25519.Sign(priv, data)
+	assert.True(t, ed25519.Verify(pub, data, sig))
 }

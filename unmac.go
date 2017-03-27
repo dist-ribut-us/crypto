@@ -14,7 +14,7 @@ import (
 // message and the output will be Overhead bytes longer than message. Unlike
 // secretbox.Seal, it does not MAC the data. It should only be use on top of
 // a MAC'd ecnryption, as in onion routing.
-func (shared *Shared) UnmacdSeal(message []byte, nonce *Nonce) []byte {
+func (shared *Symmetric) UnmacdSeal(message []byte, nonce *Nonce) []byte {
 	out := make([]byte, len(message))
 	ret := out
 	subKey := &key{}
@@ -43,7 +43,7 @@ func (shared *Shared) UnmacdSeal(message []byte, nonce *Nonce) []byte {
 	return ret
 }
 
-func setup(subKey *key, counter *[16]byte, nonce *Nonce, shared *Shared) {
+func setup(subKey *key, counter *[16]byte, nonce *Nonce, shared *Symmetric) {
 	// We use XSalsa20 for encryption so first we need to generate a
 	// key and nonce with HSalsa20.
 	var hNonce [16]byte
@@ -58,7 +58,7 @@ func setup(subKey *key, counter *[16]byte, nonce *Nonce, shared *Shared) {
 // out, which must not overlap box. The output will be Overhead bytes smaller
 // than box. The unsealed box has not been MAC'd and the data should not be
 // trusted unless there is an underlying MAC (as in onion routing)
-func (shared *Shared) UnmacdOpen(cipher []byte, nonce *Nonce) []byte {
+func (shared *Symmetric) UnmacdOpen(cipher []byte, nonce *Nonce) []byte {
 	subKey := &key{}
 	var counter [16]byte
 	setup(subKey, &counter, nonce, shared)
