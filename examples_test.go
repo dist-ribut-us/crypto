@@ -98,6 +98,9 @@ func TestCurve25519(t *testing.T) {
 	assert.NotNil(t, pub)
 	assert.NotNil(t, priv)
 
+	assert.Equal(t, KeyLength, len(pub))
+	assert.Equal(t, SignPrivLength, len(priv))
+
 	data := make([]byte, 1000)
 	rand.Read(data)
 

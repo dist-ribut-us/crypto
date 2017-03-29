@@ -69,8 +69,8 @@ func (priv *XchgPriv) String() string { return encodeToString(priv[:]) }
 // String returns the base64 encoding of the id
 func (id *ID) String() string { return encodeToString(id[:]) }
 
-// GenerateKey returns a public and private key.
-func GenerateKey() (*XchgPub, *XchgPriv) {
+// GenerateXchgKeypair returns a public and private key.
+func GenerateXchgKeypair() (*XchgPub, *XchgPriv) {
 	pub, priv, err := box.GenerateKey(rand.Reader)
 	randReadErr(err)
 	return (*XchgPub)(pub), (*XchgPriv)(priv)
@@ -189,7 +189,7 @@ func (priv *XchgPriv) AnonOpen(cipher []byte) ([]byte, error) {
 // message but the sender remains anonymous. This method also returns the symmetric
 // key for the message.
 func (pub *XchgPub) AnonSealSymmetric(tag, msg []byte) ([]byte, *Symmetric) {
-	otkXchgPub, otkXchgPriv := GenerateKey()
+	otkXchgPub, otkXchgPriv := GenerateXchgKeypair()
 	symmetric := pub.Shared(otkXchgPriv)
 	l := len(tag)
 	bts := make([]byte, l+KeyLength, box.Overhead+l+len(msg))
