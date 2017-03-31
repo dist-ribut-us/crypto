@@ -12,15 +12,6 @@ func TestGenerateXchgKeypair(t *testing.T) {
 	assert.NotNil(t, pr, "XchgPrivate key should not be nil")
 }
 
-func TestGenerateID(t *testing.T) {
-	pu, pr := GenerateXchgKeypair()
-	assert.NotNil(t, pu, "XchgPublic key should not be nil")
-	assert.NotNil(t, pr, "XchgPrivate key should not be nil")
-
-	id := pu.GetID()
-	assert.NotNil(t, id, "id should not be nil")
-}
-
 func TestNonceBox(t *testing.T) {
 	pubA, privA := GenerateXchgKeypair()
 	pubB, privB := GenerateXchgKeypair()

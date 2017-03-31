@@ -9,6 +9,9 @@ import (
 var encodeToString = base64.URLEncoding.EncodeToString
 var decodeString = base64.URLEncoding.DecodeString
 
+// IDLength of array
+const IDLength = 10
+
 // Overhead copies box.Overhead
 const Overhead = box.Overhead
 

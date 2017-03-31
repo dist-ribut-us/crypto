@@ -7,16 +7,6 @@ import (
 	"golang.org/x/crypto/nacl/box"
 )
 
-// IDLength of array
-const IDLength = 10
-
-// ID is a shorthand used to make referencing public keys easier. An ID is the
-// first 10 bytes of the sha256 of a public key. While the chances of accidental
-// collision should be minimal, malicious collision should not be discounted. ID
-// can be used as to make hash tables more efficient, but should not be
-// substituted for a full key check.
-type ID [IDLength]byte
-
 // KeyRef is similar to ID for private keys. It can be useful for managing
 // private keys.
 type KeyRef [IDLength]byte
@@ -33,9 +23,6 @@ func (pub *XchgPub) Arr() *[KeyLength]byte { return (*[KeyLength]byte)(pub) }
 // Arr returns a reference to the array underlying the private key
 func (priv *XchgPriv) Arr() *[KeyLength]byte { return (*[KeyLength]byte)(priv) }
 
-// Arr returns a reference to the array underlying the ID
-func (id *ID) Arr() *[IDLength]byte { return (*[IDLength]byte)(id) }
-
 // Arr returns a reference to the array underlying the KeyRef
 func (keyref *KeyRef) Arr() *[IDLength]byte { return (*[IDLength]byte)(keyref) }
 
@@ -44,9 +31,6 @@ func XchgPubFromArr(pub *[KeyLength]byte) *XchgPub { return (*XchgPub)(pub) }
 
 // XchgPrivFromArr casts an array to a private key
 func XchgPrivFromArr(priv *[KeyLength]byte) *XchgPriv { return (*XchgPriv)(priv) }
-
-// IDFromArr casts an array to an ID
-func IDFromArr(id *[IDLength]byte) *ID { return (*ID)(id) }
 
 // KeyRefFromArr casts an array to a KeyRef
 func KeyRefFromArr(keyref *[IDLength]byte) *KeyRef { return (*KeyRef)(keyref) }
@@ -65,9 +49,6 @@ func (pub *XchgPub) String() string { return encodeToString(pub[:]) }
 
 // String returns the base64 encoding of the private key
 func (priv *XchgPriv) String() string { return encodeToString(priv[:]) }
-
-// String returns the base64 encoding of the id
-func (id *ID) String() string { return encodeToString(id[:]) }
 
 // GenerateXchgKeypair returns a public and private key.
 func GenerateXchgKeypair() (*XchgPub, *XchgPriv) {
@@ -125,26 +106,8 @@ func XchgPrivFromSlice(bs []byte) *XchgPriv {
 	return &priv
 }
 
-// GetID returns the ID for a public key.
-func (pub *XchgPub) GetID() *ID {
-	id := &ID{}
-	copy(id[:], Hash(pub[:]).Digest()[:])
-	return id
-}
-
 // ErrIncorrectIDSize when a byte slice length does not equal IDLength
 const ErrIncorrectIDSize = errors.String("Incorrect ID size")
-
-// IDFromSlice returns an ID from a byte slice. The values are copied, so the
-// slice can be modified after
-func IDFromSlice(b []byte) (*ID, error) {
-	if len(b) != IDLength {
-		return nil, ErrIncorrectIDSize
-	}
-	id := &ID{}
-	copy(id[:], b)
-	return id, nil
-}
 
 // GetKeyRef returns the KeyRef for a private key
 func (priv *XchgPriv) GetKeyRef() *KeyRef {
