@@ -48,8 +48,8 @@ func SignPubFromSlice(bs []byte) *SignPub {
 // Signature produced from signing a message
 type Signature []byte
 
-// GenerateSignKeypair creates a pair of signing keys.
-func GenerateSignKeypair() (*SignPub, *SignPriv) {
+// GenerateSignPair creates a pair of signing keys.
+func GenerateSignPair() (*SignPub, *SignPriv) {
 	pub, priv, err := ed25519.GenerateKey(rand.Reader)
 	randReadErr(err)
 	sigPub, sigPriv := &SignPub{}, &SignPriv{}

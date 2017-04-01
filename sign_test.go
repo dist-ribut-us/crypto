@@ -7,7 +7,7 @@ import (
 )
 
 func TestSign(t *testing.T) {
-	pub, priv := GenerateSignKeypair()
+	pub, priv := GenerateSignPair()
 	assert.NotNil(t, pub)
 	assert.NotNil(t, priv)
 

@@ -8,9 +8,7 @@ import (
 )
 
 func TestUnmacd(t *testing.T) {
-	pubA, _ := GenerateXchgKeypair()
-	_, privB := GenerateXchgKeypair()
-	shared := pubA.Shared(privB)
+	shared := RandomSymmetric()
 	assert.NotNil(t, shared)
 
 	nonce := &Nonce{}

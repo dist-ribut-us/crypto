@@ -6,19 +6,20 @@ import (
 	"testing"
 )
 
-func TestGenerateXchgKeypair(t *testing.T) {
-	pu, pr := GenerateXchgKeypair()
-	assert.NotNil(t, pu, "XchgPublic key should not be nil")
-	assert.NotNil(t, pr, "XchgPrivate key should not be nil")
+func TestGenerateXchgPair(t *testing.T) {
+	pair := GenerateXchgPair()
+	assert.NotNil(t, pair)
+	assert.NotNil(t, pair.Pub())
+	assert.NotNil(t, pair.Priv())
 }
 
 func TestNonceBox(t *testing.T) {
-	pubA, privA := GenerateXchgKeypair()
-	pubB, privB := GenerateXchgKeypair()
-	shared := pubA.Shared(privB)
-	assert.NotNil(t, shared, "shared should not be nil")
+	a := GenerateXchgPair()
+	b := GenerateXchgPair()
+	shared := b.Shared(a.Pub())
+	assert.NotNil(t, shared)
 
-	assert.Equal(t, pubA.Shared(privB), pubB.Shared(privA))
+	assert.Equal(t, b.Shared(a.Pub()), a.Shared(b.Pub()))
 
 	msgA := make([]byte, 100)
 	rand.Read(msgA)
@@ -36,37 +37,37 @@ func TestNonceBox(t *testing.T) {
 }
 
 func TestAnon(t *testing.T) {
-	pub, priv := GenerateXchgKeypair()
-	assert.NotNil(t, pub, "XchgPublic key should not be nil")
-	assert.NotNil(t, priv, "XchgPrivate key should not be nil")
+	pair := GenerateXchgPair()
 
 	msg := make([]byte, 100)
 	rand.Read(msg)
 
-	c, s1 := pub.AnonSealSymmetric([]byte{1, 2, 3}, msg)
+	c, s1 := pair.AnonSealSymmetric([]byte{1, 2, 3}, msg)
 	assert.Equal(t, []byte{1, 2, 3}, c[:3])
-	p, s2, err := priv.AnonOpenSymmetric(c[3:])
+	p, s2, err := pair.AnonOpenSymmetric(c[3:])
 	assert.NoError(t, err)
 	assert.Equal(t, s1, s2)
 	assert.Equal(t, msg, p)
 
-	p, err = priv.AnonOpen(pub.AnonSeal(msg))
+	p, err = pair.AnonOpen(pair.AnonSeal(msg))
 	assert.NoError(t, err)
 	assert.Equal(t, msg, p)
 }
 
 func TestStringRoundTrips(t *testing.T) {
-	pub, priv := GenerateXchgKeypair()
-	assert.NotNil(t, pub, "XchgPublic key should not be nil")
-	assert.NotNil(t, priv, "XchgPrivate key should not be nil")
+	pair := GenerateXchgPair()
 
-	pubRT, err := XchgPubFromString(pub.String())
+	pubRT, err := XchgPubFromString(pair.Pub().String())
 	assert.NoError(t, err)
-	assert.Equal(t, pub, pubRT)
+	assert.Equal(t, pair.Pub(), pubRT)
 
-	privRT, err := XchgPrivFromString(priv.String())
+	privRT, err := XchgPrivFromString(pair.Priv().String())
 	assert.NoError(t, err)
-	assert.Equal(t, priv, privRT)
+	assert.Equal(t, pair.Priv(), privRT)
+
+	pairRT, err := XchgPairFromString(pair.String())
+	assert.NoError(t, err)
+	assert.Equal(t, pair, pairRT)
 
 	shared := RandomSymmetric()
 	assert.NotNil(t, shared)
@@ -76,15 +77,16 @@ func TestStringRoundTrips(t *testing.T) {
 }
 
 func TestSliceRoundTrips(t *testing.T) {
-	pub, priv := GenerateXchgKeypair()
-	assert.NotNil(t, pub, "XchgPublic key should not be nil")
-	assert.NotNil(t, priv, "XchgPrivate key should not be nil")
+	pair := GenerateXchgPair()
 
-	pubRT := XchgPubFromSlice(pub.Slice())
-	assert.Equal(t, pub, pubRT)
+	pubRT := XchgPubFromSlice(pair.Pub().Slice())
+	assert.Equal(t, pair.Pub(), pubRT)
 
-	privRT := XchgPrivFromSlice(priv.Slice())
-	assert.Equal(t, priv, privRT)
+	privRT := XchgPrivFromSlice(pair.Priv().Slice())
+	assert.Equal(t, pair.Priv(), privRT)
+
+	pairRT := XchgPairFromSlice(pair.Slice())
+	assert.Equal(t, pair, pairRT)
 
 	shared := RandomSymmetric()
 	assert.NotNil(t, shared)

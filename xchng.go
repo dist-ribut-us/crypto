@@ -17,6 +17,18 @@ type XchgPub key
 // XchgPriv key
 type XchgPriv key
 
+// XchgPair embeds XchgPub and XchgPriv
+type XchgPair struct {
+	*XchgPub
+	*XchgPriv
+}
+
+// Pub is shorthand to get the XchgPub
+func (pair *XchgPair) Pub() *XchgPub { return pair.XchgPub }
+
+// Priv is shorthand to get the XchgPriv
+func (pair *XchgPair) Priv() *XchgPriv { return pair.XchgPriv }
+
 // Arr returns a reference to the array underlying the public key
 func (pub *XchgPub) Arr() *[KeyLength]byte { return (*[KeyLength]byte)(pub) }
 
@@ -41,6 +53,15 @@ func (pub *XchgPub) Slice() []byte { return pub[:] }
 // Slice casts the private key to a byte slice
 func (priv *XchgPriv) Slice() []byte { return priv[:] }
 
+// Slice casts both keypairs to slices and appends the Pub to the end of the
+// Priv.
+func (pair *XchgPair) Slice() []byte {
+	b := make([]byte, KeyLength*2)
+	copy(b, pair.XchgPriv[:])
+	copy(b[KeyLength:], pair.XchgPub[:])
+	return b
+}
+
 // Slice casts the id to a byte slice
 func (id *ID) Slice() []byte { return id[:] }
 
@@ -50,27 +71,37 @@ func (pub *XchgPub) String() string { return encodeToString(pub[:]) }
 // String returns the base64 encoding of the private key
 func (priv *XchgPriv) String() string { return encodeToString(priv[:]) }
 
-// GenerateXchgKeypair returns a public and private key.
-func GenerateXchgKeypair() (*XchgPub, *XchgPriv) {
+func (pair *XchgPair) String() string { return encodeToString(pair.Slice()) }
+
+// GenerateXchgPair returns a public and private key.
+func GenerateXchgPair() *XchgPair {
 	pub, priv, err := box.GenerateKey(rand.Reader)
 	randReadErr(err)
-	return (*XchgPub)(pub), (*XchgPriv)(priv)
+	return &XchgPair{
+		XchgPub:  (*XchgPub)(pub),
+		XchgPriv: (*XchgPriv)(priv),
+	}
 }
 
-// KeyPairFromString takes a two base64 encoded strings and returns a keypair
-func KeyPairFromString(pubStr, privStr string) (*XchgPub, *XchgPriv, error) {
-	pub, err := XchgPubFromString(pubStr)
+// XchgPairFromString takes a two base64 encoded strings and returns a keypair
+func XchgPairFromString(pairStr string) (*XchgPair, error) {
+	bs, err := decodeString(pairStr)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	priv, err := XchgPrivFromString(privStr)
-	if err != nil {
-		return nil, nil, err
-	}
-	return pub, priv, nil
+	return XchgPairFromSlice(bs), nil
 }
 
-// XchgPubFromString takes a base64 encoded public key and returns it as a XchgPub
+// XchgPairFromSlice takes a slice and returns an XchgPair
+func XchgPairFromSlice(bs []byte) *XchgPair {
+	return &XchgPair{
+		XchgPriv: XchgPrivFromSlice(bs),
+		XchgPub:  XchgPubFromSlice(bs[KeyLength:]),
+	}
+}
+
+// XchgPubFromString takes a base64 encoded public key and returns it as a
+// XchgPub
 func XchgPubFromString(pubStr string) (*XchgPub, error) {
 	key, err := keyFromString(pubStr)
 	if err != nil {
@@ -81,7 +112,8 @@ func XchgPubFromString(pubStr string) (*XchgPub, error) {
 	return &p, nil
 }
 
-// XchgPrivFromString takes a base64 encoded public key and returns it as a XchgPriv
+// XchgPrivFromString takes a base64 encoded public key and returns it as a
+// XchgPriv
 func XchgPrivFromString(privStr string) (*XchgPriv, error) {
 	key, err := keyFromString(privStr)
 	if err != nil {
@@ -119,7 +151,7 @@ func (priv *XchgPriv) GetKeyRef() *KeyRef {
 }
 
 // Shared returns a Symmetric key from a public and private key
-func (pub *XchgPub) Shared(priv *XchgPriv) *Symmetric {
+func (priv *XchgPriv) Shared(pub *XchgPub) *Symmetric {
 	symmetric := &Symmetric{}
 	box.Precompute(symmetric.Arr(), pub.Arr(), priv.Arr())
 	return symmetric
@@ -152,12 +184,12 @@ func (priv *XchgPriv) AnonOpen(cipher []byte) ([]byte, error) {
 // message but the sender remains anonymous. This method also returns the symmetric
 // key for the message.
 func (pub *XchgPub) AnonSealSymmetric(tag, msg []byte) ([]byte, *Symmetric) {
-	otkXchgPub, otkXchgPriv := GenerateXchgKeypair()
-	symmetric := pub.Shared(otkXchgPriv)
+	otk := GenerateXchgPair()
+	symmetric := otk.Shared(pub)
 	l := len(tag)
 	bts := make([]byte, l+KeyLength, box.Overhead+l+len(msg))
 	copy(bts, tag)
-	copy(bts[l:], otkXchgPub[:])
+	copy(bts[l:], otk.XchgPub[:])
 	return box.SealAfterPrecomputation(bts, msg, zeroNonce.Arr(), symmetric.Arr()), symmetric
 }
 
@@ -169,7 +201,7 @@ func (priv *XchgPriv) AnonOpenSymmetric(cipher []byte) ([]byte, *Symmetric, erro
 	}
 	otkXchgPub := &XchgPub{}
 	copy(otkXchgPub[:], cipher[:KeyLength])
-	symmetric := otkXchgPub.Shared(priv)
+	symmetric := priv.Shared(otkXchgPub)
 
 	msg, ok := box.OpenAfterPrecomputation(nil, cipher[KeyLength:], zeroNonce.Arr(), symmetric.Arr())
 	if !ok {
