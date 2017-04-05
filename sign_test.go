@@ -28,3 +28,16 @@ func TestGenerateID(t *testing.T) {
 	expectedID, err := IDFromString("Kit-Dtm8Fbic6w==")
 	assert.Equal(t, expectedID, pu.ID())
 }
+
+func TestRoundTrip(t *testing.T) {
+	pub, priv := GenerateSignPair()
+
+	assert.Equal(t, pub, SignPubFromSlice(pub.Slice()))
+	assert.Equal(t, priv, SignPrivFromSlice(priv.Slice()))
+	pubRT, err := SignPubFromString(pub.String())
+	assert.NoError(t, err)
+	assert.Equal(t, pub, pubRT)
+	privRT, err := SignPrivFromString(priv.String())
+	assert.NoError(t, err)
+	assert.Equal(t, priv, privRT)
+}

@@ -26,6 +26,9 @@ func (pub *SignPub) String() string { return encodeToString(pub[:]) }
 // Slice casts the public key to a byte slice
 func (pub *SignPub) Slice() []byte { return pub[:] }
 
+// Slice casts the public key to a byte slice
+func (priv *SignPriv) Slice() []byte { return priv[:] }
+
 // SignPubFromString takes a base64 encoded public key and returns it as a
 // SignPub
 func SignPubFromString(pubStr string) (*SignPub, error) {
@@ -38,11 +41,33 @@ func SignPubFromString(pubStr string) (*SignPub, error) {
 	return &p, nil
 }
 
+// SignPrivFromString takes a base64 encoded public key and returns it as a
+// SignPriv
+func SignPrivFromString(privStr string) (*SignPriv, error) {
+	priv := &SignPriv{}
+
+	data, err := decodeString(privStr)
+	if err != nil {
+		return nil, err
+	}
+	copy(priv[:], data)
+
+	return priv, nil
+}
+
 // SignPubFromSlice converts a byte slice to a public key. The values are copied, so
 // the slice can be modified after.
 func SignPubFromSlice(bs []byte) *SignPub {
 	pub := SignPub(*keyFromSlice(bs))
 	return &pub
+}
+
+// SignPrivFromSlice converts a byte slice to a public key. The values are copied, so
+// the slice can be modified after.
+func SignPrivFromSlice(bs []byte) *SignPriv {
+	priv := &SignPriv{}
+	copy(priv[:], bs)
+	return priv
 }
 
 // Signature produced from signing a message
