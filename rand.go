@@ -7,19 +7,31 @@ import (
 
 // RandInt returns a random int generated using crypto/rand
 func RandInt(max int) int {
-	bits := 0
-	for c := max; c > 0; bits++ {
-		c >>= 1
+	var (
+		bits uint = 32
+		ds   uint = 32
+	)
+	for {
+		ms := max >> bits
+		if ms == 1 {
+			break
+		}
+		if ms > 1 {
+			bits += ds
+		} else {
+			bits -= ds
+		}
+		ds >>= 1
 	}
 	for {
-		r := randInt(bits)
+		r := randInt(bits + 1)
 		if r < max {
 			return r
 		}
 	}
 }
 
-func randInt(bits int) int {
+func randInt(bits uint) int {
 	b := make([]byte, (bits/8)+1)
 	_, err := rand.Read(b)
 	randReadErr(err)

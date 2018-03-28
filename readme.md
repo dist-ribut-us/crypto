@@ -10,10 +10,23 @@ encryption, the ed25519 package for signing, sha256 for hashing and provides
 it's own helper for managing nonce (which relies on crypto/rand).
 
 The primary motivation of this package is to provide types for the various
-cryptographic primatives. The two underlying cryptographic packages use byte
+cryptographic primitives. The two underlying cryptographic packages use byte
 slices for all the data types (keys, nonce, plain-text and cipher-text). I found
-it easy to confuse the agruments. Giving each primative it's own type the
-compiler will help enforce that the arugments to each method are correct.
+it easy to confuse the arguments. Giving each primitive it's own type the
+compiler will help enforce that the arguments to each method are correct.
+
+### Correct Use
+
+#### Communication
+Identity is based on a signing key. Two parties that wish to communicate must
+first have a way to exchange public signing keys securely. Each party then
+generates a one-time-use exchange key pair (XchgPair). They each sign their
+public exchange key and send it to the other. Each party then validates the
+public key they've received against public signature. If that matches, both
+use their private exchange key with the validated public exchange key to get the
+same shared secret (note that means privA.Shared(pubB) == pirvB.Shared(pubA) ).
+That shared secret is a Symmetric key and it can be used to safely exchange
+messages.
 
 ### Interrupt
 

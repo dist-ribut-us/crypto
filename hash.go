@@ -35,7 +35,7 @@ type Hasher interface {
 }
 type hsh struct{ hash.Hash }
 
-// Hash returns a hasher, initilized by writing b to the hash.
+// Hash returns a sha256 backed hasher, initilized by writing b to the hash.
 func Hash(bs ...[]byte) Hasher {
 	h := sha256.New()
 	for _, b := range bs {
