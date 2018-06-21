@@ -100,17 +100,27 @@ func (symmetric *Symmetric) Open(cipher []byte) ([]byte, error) {
 	if cipher == nil {
 		return nil, nil
 	}
-	nonce := &Nonce{}
-	if len(cipher) < NonceLength {
+
+	nonce := ExtractNonce(cipher)
+	if nonce == nil {
 		return nil, ErrDecryptionFailed
 	}
-	copy(nonce[:], cipher[:NonceLength])
 
 	data, ok := box.OpenAfterPrecomputation(nil, cipher[NonceLength:], nonce.Arr(), symmetric.Arr())
 	if !ok {
 		return nil, ErrDecryptionFailed
 	}
 	return data, nil
+}
+
+// ExtractNonce prefix from a cipher
+func ExtractNonce(cipher []byte) *Nonce {
+	if len(cipher) < NonceLength {
+		return nil
+	}
+	nonce := &Nonce{}
+	copy(nonce[:], cipher[:NonceLength])
+	return nonce
 }
 
 // NonceOpen will decipher a message with a specific nonce
