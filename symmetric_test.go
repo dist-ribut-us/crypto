@@ -53,3 +53,18 @@ func TestSealPackets(t *testing.T) {
 		assert.Equal(t, msgs[i][2:], msg)
 	}
 }
+
+func TestNonceEnd2End(t *testing.T) {
+	shared := RandomSymmetric()
+	assert.NotNil(t, shared, "shared should not be nil")
+
+	msg := make([]byte, 100)
+	rand.Read(msg)
+
+	nonce := RandomNonce()
+
+	cipher := shared.NonceSeal(msg, nonce)
+	plain, err := shared.NonceOpen(cipher, nonce)
+	assert.NoError(t, err)
+	assert.Equal(t, msg, plain)
+}

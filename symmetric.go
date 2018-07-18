@@ -65,6 +65,17 @@ func (symmetric *Symmetric) Seal(msg []byte, nonce *Nonce) []byte {
 	return box.SealAfterPrecomputation(out, msg, nonce.Arr(), symmetric.Arr())
 }
 
+// NonceSeal will seal a message but not prepend the nonce - it matches
+// NonceOpen. If nonce is nil, a zero value nonce will be used
+func (symmetric *Symmetric) NonceSeal(msg []byte, nonce *Nonce) []byte {
+	out := make([]byte, 0, len(msg)+box.Overhead)
+	if nonce == nil {
+		nonce = zeroNonce
+	}
+
+	return box.SealAfterPrecomputation(out, msg, nonce.Arr(), symmetric.Arr())
+}
+
 // SealAll seals many messages with the same shared key. If nonce is nil, a
 // random nonce will be generated for each message.
 func (symmetric *Symmetric) SealAll(msgs [][]byte, nonce *Nonce) [][]byte {
