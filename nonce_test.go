@@ -15,3 +15,15 @@ func TestNonceInc(t *testing.T) {
 	expected[2] = 6
 	assert.Equal(t, expected, n)
 }
+
+func TestNonceSlice(t *testing.T) {
+	nonce := RandomNonce()
+	assert.Equal(t, nonce, NonceFromSlice(nonce.Slice()))
+}
+
+func TestNonceString(t *testing.T) {
+	nonce := RandomNonce()
+	out, err := NonceFromString(nonce.String())
+	assert.NoError(t, err)
+	assert.Equal(t, nonce, out)
+}

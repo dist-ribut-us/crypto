@@ -16,7 +16,14 @@ var zeroNonce = &Nonce{}
 func (nonce *Nonce) Arr() *[NonceLength]byte { return (*[NonceLength]byte)(nonce) }
 
 // NonceFromArr casts an array to a Nonce
-func NonceFromArr(noncd *[NonceLength]byte) *Nonce { return (*Nonce)(noncd) }
+func NonceFromArr(nonce *[NonceLength]byte) *Nonce { return (*Nonce)(nonce) }
+
+// NonceFromSlice casts an array to a Nonce
+func NonceFromSlice(nonceSlice []byte) *Nonce {
+	var nonce Nonce
+	copy(nonce[:], nonceSlice)
+	return &nonce
+}
 
 // Slice casts the nonce to a byte slice
 func (nonce *Nonce) Slice() []byte { return nonce[:] }
