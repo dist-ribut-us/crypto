@@ -2,8 +2,13 @@ package crypto
 
 import (
 	"crypto/rand"
+	"github.com/dist-ribut-us/errors"
 	"golang.org/x/crypto/ed25519"
 )
+
+// ErrBadSignature is available to indicated a process failure due to a bad
+// signature. It is not used in this package.
+const ErrBadSignature = errors.String("Signature does not match the message")
 
 // SignPub is a public key used to verify signatures
 type SignPub key
